@@ -1,0 +1,49 @@
+export interface Location {
+  latitude: number;
+  longitude: number;
+  address?: string;
+}
+
+export interface RoutePoint {
+  location: Location;
+  instructions?: string;
+  distance?: number;
+  duration?: number;
+}
+
+export interface WeatherData {
+  temperature: number;
+  description: string;
+  icon: string;
+  humidity: number;
+  windSpeed: number;
+  precipitation: number;
+}
+
+export interface WeatherPoint {
+  location: Location;
+  weather: WeatherData;
+  distanceFromStart: number;
+}
+
+export interface Route {
+  id: string;
+  name: string;
+  startPoint: Location;
+  endPoint: Location;
+  waypoints: RoutePoint[];
+  weatherPoints: WeatherPoint[];
+  vehicleType: VehicleType;
+  totalDistance: number;
+  totalDuration: number;
+  createdAt: Date;
+}
+
+export type VehicleType = 'car' | 'bicycle' | 'walking';
+
+export interface SavedRoute extends Route {
+  isFavorite?: boolean;
+}
+
+// Re-export geocoding types for convenience
+export type { SearchSuggestion, GeocodeResult } from '@/services/geocodingService';
