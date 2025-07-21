@@ -1,163 +1,228 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Alert } from 'react-native';
-import { YStack, XStack, Button, Input, Text } from '@/components/ui';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, TouchableOpacity, FlatList, Keyboard } from 'react-native';
+import { Input, Text, YStack, XStack } from '@/components/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { useDebounce } from 'use-debounce';
+
+import { GeocodingService, SearchSuggestion } from '@/services/geocodingService';
 import { Location } from '@/types';
-import { GeocodingService, SearchSuggestion, GeocodeResult } from '@/services/geocodingService';
-import { SearchSuggestions } from './SearchSuggestions';
 
 interface LocationSearchProps {
   onLocationSelect: (location: Location) => void;
   placeholder?: string;
   buttonText?: string;
-  autoFocus?: boolean;
-  showRecentSearches?: boolean;
+  value?: string;
+  style?: any;
 }
 
 export function LocationSearch({ 
   onLocationSelect, 
-  placeholder = "Search for an address or place...",
-  buttonText = "Search",
-  autoFocus = false,
-  showRecentSearches = true,
+  placeholder = "Search for a location",
+  buttonText,
+  value,
+  style 
 }: LocationSearchProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchText, setSearchText] = useState(value || '');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [debouncedSearchText] = useDebounce(searchText, 300);
 
-  // Fetch suggestions when debounced query changes
+  // Load search suggestions when debounced text changes
   useEffect(() => {
-    fetchSuggestions(debouncedSearchQuery);
-  }, [debouncedSearchQuery]);
-
-  const fetchSuggestions = async (query: string) => {
-    setIsSearching(true);
-    try {
-      const result: GeocodeResult = await GeocodingService.searchWithAutocomplete(query, 8);
-      setSuggestions(result.suggestions);
-      setHasMore(result.hasMore);
-      setShowSuggestions(true);
-    } catch (error) {
-      console.error('Error fetching suggestions:', error);
+    if (debouncedSearchText.length >= 2) {
+      performSearch(debouncedSearchText);
+    } else {
       setSuggestions([]);
-      setHasMore(false);
-    } finally {
-      setIsSearching(false);
+      setShowSuggestions(false);
     }
-  };
+  }, [debouncedSearchText]);
 
-  const handleSuggestionPress = (suggestion: SearchSuggestion) => {
+  const performSearch = useCallback(async (query: string) => {
+    if (query.length < 2) return;
+
+    setIsLoading(true);
+    try {
+      const result = await GeocodingService.searchWithAutocomplete(query, 5);
+      setSuggestions(result.suggestions);
+      setShowSuggestions(result.suggestions.length > 0);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleLocationSelect = useCallback((suggestion: SearchSuggestion) => {
+    setSearchText(suggestion.displayName);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    Keyboard.dismiss();
     GeocodingService.addToRecentSearches(suggestion);
     onLocationSelect(suggestion.location);
-    setSearchQuery(suggestion.displayName);
-    setShowSuggestions(false);
-  };
+  }, [onLocationSelect]);
 
-  const handleClearRecent = () => {
-    GeocodingService.clearRecentSearches();
-    if (debouncedSearchQuery.trim().length < 2) {
+  const handleTextChange = useCallback((text: string) => {
+    setSearchText(text);
+    if (text.length === 0) {
       setSuggestions([]);
+      setShowSuggestions(false);
     }
-  };
+  }, []);
 
-  const handleInputFocus = () => {
-    if (showRecentSearches && searchQuery.trim().length < 2) {
-      fetchSuggestions('');
-    } else {
+  const handleFocus = useCallback(() => {
+    if (suggestions.length > 0) {
       setShowSuggestions(true);
     }
-  };
+  }, [suggestions.length]);
 
-  const handleInputBlur = () => {
-    // Delay hiding suggestions to allow for suggestion tap
-    setTimeout(() => setShowSuggestions(false), 150);
-  };
+  const handleBlur = useCallback(() => {
+    // Delay hiding suggestions to allow for selection
+    setTimeout(() => {
+      setShowSuggestions(false);
+    }, 150);
+  }, []);
 
-  const searchLocation = async () => {
-    if (!searchQuery.trim()) {
-      Alert.alert('Error', 'Please enter a search query.');
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // Using a free geocoding service (Nominatim from OpenStreetMap)
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&addressdetails=1`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to search location');
-      }
-      
-      const data = await response.json();
-      
-      if (data.length === 0) {
-        Alert.alert('No Results', 'No locations found for your search query. Please try a different search term.');
-        return;
-      }
-      
-      const result = data[0];
-      const location: Location = {
-        latitude: parseFloat(result.lat),
-        longitude: parseFloat(result.lon),
-        address: result.display_name,
-      };
-      
-      onLocationSelect(location);
-      setSearchQuery('');
-      
-    } catch (error) {
-      console.error('Error searching location:', error);
-      Alert.alert('Error', 'Failed to search for location. Please try again.');
-    } finally {
-      setIsSearching(false);
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'address':
+        return 'home-outline';
+      case 'poi':
+        return 'business-outline';
+      case 'city':
+        return 'location-outline';
+      case 'country':
+        return 'earth-outline';
+      default:
+        return 'location-outline';
     }
   };
+
+  const renderSuggestionItem = ({ item }: { item: SearchSuggestion }) => (
+    <TouchableOpacity
+      style={styles.suggestionItem}
+      onPress={() => handleLocationSelect(item)}
+      activeOpacity={0.7}
+    >
+      <XStack alignItems="center" space="sm" flex={1}>
+        <View style={styles.categoryIcon}>
+          <Ionicons 
+            name={getCategoryIcon(item.category)} 
+            size={16} 
+            color="#666" 
+          />
+        </View>
+        <YStack flex={1}>
+          <Text variant="bodyMedium" numberOfLines={1}>
+            {item.displayName.split(',')[0]}
+          </Text>
+          <Text variant="bodySmall" color="#666" numberOfLines={1}>
+            {item.displayName.split(',').slice(1).join(',').trim()}
+          </Text>
+        </YStack>
+      </XStack>
+    </TouchableOpacity>
+  );
 
   return (
-    <YStack space={"sm"}>
-      <XStack space={"sm"} alignItems="center">
-        <Input
-          flex={1}
-          placeholder={placeholder}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onSubmitEditing={searchLocation}
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          returnKeyType="search"
-          autoFocus={autoFocus}
-        />
-        <Button 
-          onPress={searchLocation}
-          disabled={isSearching || !searchQuery.trim()}
-          backgroundColor="$blue7"
+    <View style={[styles.container, style]}>
+      <Input
+        value={searchText}
+        onChangeText={handleTextChange}
+        placeholder={placeholder}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        style={styles.input}
+      />
+
+      {/* Clear button */}
+      {searchText.length > 0 && (
+        <TouchableOpacity 
+          style={styles.clearButton}
+          onPress={() => handleTextChange('')}
         >
-          {isSearching ? '...' : buttonText}
-        </Button>
-      </XStack>
-      
-      {/* Autocomplete Suggestions */}
-      {showSuggestions && suggestions.length > 0 && (
-        <SearchSuggestions
-          suggestions={suggestions}
-          isLoading={isSearching}
-          onSuggestionSelect={handleSuggestionPress}
-          searchQuery={debouncedSearchQuery}
-        />
+          <Ionicons name="close-circle" size={16} color="#666" />
+        </TouchableOpacity>
       )}
-      
-      <Text fontSize={12} color="$gray11" textAlign="center">
-        {showSuggestions && isSearching ? 
-          'Searching...' : 
-          'Search for addresses, cities, landmarks, or points of interest'
-        }
-      </Text>
-    </YStack>
+
+      {/* Loading indicator */}
+      {isLoading && (
+        <View style={styles.loadingIndicator}>
+          <Ionicons name="ellipsis-horizontal" size={16} color="#666" />
+        </View>
+      )}
+
+      {showSuggestions && suggestions.length > 0 && (
+        <View style={styles.suggestionsContainer}>
+          <FlatList
+            data={suggestions}
+            renderItem={renderSuggestionItem}
+            keyExtractor={(item, index) => `${item.id || index}`}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            maxToRenderPerBatch={10}
+            initialNumToRender={5}
+          />
+        </View>
+      )}
+    </View>
   );
-} 
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  input: {
+    fontSize: 16,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingRight: 32, // Space for clear button
+  },
+  clearButton: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -8 }],
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    right: 8,
+    top: '50%',
+    transform: [{ translateY: -8 }],
+  },
+  suggestionsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginTop: 4,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    zIndex: 1000,
+  },
+  suggestionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  categoryIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+}); 

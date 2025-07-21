@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { StyleSheet, Alert } from 'react-native';
+import { StyleSheet, Alert, View, TouchableOpacity, Dimensions, Animated, PanResponder } from 'react-native';
 import * as Location from 'expo-location';
-import { YStack, XStack, Button, Text, ScrollView, Switch } from '@/components/ui';
+import { YStack, XStack, Button, Text, ScrollView, Switch, Card, Input } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { MapViewComponent } from '@/components/MapView';
 import { VehicleSelector } from '@/components/VehicleSelector';
@@ -16,6 +17,8 @@ import { RoutingService, RouteAlternative } from '@/services/routingService';
 import { WeatherService } from '@/services/weatherService';
 import { StorageService } from '@/services/storageService';
 import { useRoute } from '@/contexts/RouteContext';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function RoutePlannerScreen() {
   const [startPoint, setStartPoint] = useState<LocationType | undefined>();
@@ -33,6 +36,12 @@ export default function RoutePlannerScreen() {
     duration: number;
   } | null>(null);
   
+  // UI State
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [bottomSheetHeight] = useState(new Animated.Value(120)); // Initial height for route info
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showRouteControls, setShowRouteControls] = useState(false);
+  
   const { loadedRoute, setLoadedRoute, isRouteLoaded } = useRoute();
 
   // Request location permissions on component mount
@@ -48,6 +57,37 @@ export default function RoutePlannerScreen() {
       }
     }, [loadedRoute, isRouteLoaded])
   );
+
+  // Pan responder for bottom sheet
+  const panResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: (evt, gestureState) => {
+      return Math.abs(gestureState.dy) > 10;
+    },
+    onPanResponderMove: (evt, gestureState) => {
+      const newHeight = Math.max(120, Math.min(screenHeight * 0.6, 120 - gestureState.dy));
+      bottomSheetHeight.setValue(newHeight);
+    },
+    onPanResponderRelease: (evt, gestureState) => {
+      const velocity = gestureState.vy;
+      const currentHeight = (bottomSheetHeight as any)._value;
+      
+      let targetHeight = 120;
+      if (velocity > 0.5 || currentHeight < 200) {
+        targetHeight = 120; // Snap to collapsed
+      } else if (velocity < -0.5 || currentHeight > 300) {
+        targetHeight = screenHeight * 0.6; // Snap to expanded
+      } else {
+        targetHeight = currentHeight > 200 ? screenHeight * 0.6 : 120;
+      }
+      
+      Animated.spring(bottomSheetHeight, {
+        toValue: targetHeight,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 8,
+      }).start();
+    },
+  });
 
   const requestLocationPermission = useCallback(async () => {
     try {
@@ -195,6 +235,15 @@ export default function RoutePlannerScreen() {
           duration: result.totalDuration,
         });
       }
+      
+      // Expand bottom sheet when route is calculated
+      Animated.spring(bottomSheetHeight, {
+        toValue: 280,
+        useNativeDriver: false,
+        tension: 100,
+        friction: 8,
+      }).start();
+      
     } catch (error) {
       console.error('Error calculating route:', error);
       Alert.alert('Error', 'Failed to calculate route. Please try again.');
@@ -280,9 +329,18 @@ export default function RoutePlannerScreen() {
     setSelectedRouteId('route-0');
     setWeatherPoints([]);
     setRouteInfo(null);
+    setSearchQuery('');
     if (isRouteLoaded) {
       setLoadedRoute(null);
     }
+    
+    // Collapse bottom sheet
+    Animated.spring(bottomSheetHeight, {
+      toValue: 120,
+      useNativeDriver: false,
+      tension: 100,
+      friction: 8,
+    }).start();
   }, [isRouteLoaded, setLoadedRoute]);
 
   const loadRouteData = useCallback((route: Route) => {
@@ -298,6 +356,14 @@ export default function RoutePlannerScreen() {
       distance: route.totalDistance,
       duration: route.totalDuration,
     });
+    
+    // Expand bottom sheet for loaded route
+    Animated.spring(bottomSheetHeight, {
+      toValue: 280,
+      useNativeDriver: false,
+      tension: 100,
+      friction: 8,
+    }).start();
   }, []);
 
   // Memoized route statistics formatting
@@ -328,50 +394,222 @@ export default function RoutePlannerScreen() {
     };
   }, [routeInfo, waypoints.length]);
 
+  const toggleRouteControls = () => {
+    setShowRouteControls(!showRouteControls);
+  };
+
+  const swapStartAndEnd = () => {
+    if (startPoint && endPoint) {
+      const temp = startPoint;
+      setStartPoint(endPoint);
+      setEndPoint(temp);
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <YStack flex={1}>
-        {/* Map View with Error Boundary */}
-        <YStack flex={1}>
-          <MapErrorBoundary>
-            <MapViewComponent
-              startPoint={startPoint}
-              endPoint={endPoint}
-              waypoints={waypoints}
-              routeCoordinates={routeCoordinates}
-              routeAlternatives={routeAlternatives}
-              selectedRouteId={selectedRouteId}
-              weatherPoints={weatherPoints}
-              onStartPointChange={setStartPoint}
-              onEndPointChange={setEndPoint}
-              onWaypointAdd={addWaypoint}
-              onWaypointRemove={removeWaypoint}
-              onRouteAlternativePress={handleRouteAlternativePress}
-            />
-          </MapErrorBoundary>
-        </YStack>
+    <View style={styles.container}>
+      {/* Map View with Error Boundary */}
+      <MapErrorBoundary>
+        <MapViewComponent
+          startPoint={startPoint}
+          endPoint={endPoint}
+          waypoints={waypoints}
+          routeCoordinates={routeCoordinates}
+          routeAlternatives={routeAlternatives}
+          selectedRouteId={selectedRouteId}
+          weatherPoints={weatherPoints}
+          onStartPointChange={setStartPoint}
+          onEndPointChange={setEndPoint}
+          onWaypointAdd={addWaypoint}
+          onWaypointRemove={removeWaypoint}
+          onRouteAlternativePress={handleRouteAlternativePress}
+        />
+      </MapErrorBoundary>
 
-        {/* Controls */}
-        <ScrollView>
-          <YStack padding={24} space="lg">
-            {/* Vehicle Selection */}
-            <VehicleSelector
-              selectedVehicle={selectedVehicle}
-              onVehicleSelect={setSelectedVehicle}
-            />
-
-            {/* Alternative Routes Toggle */}
-            <XStack justifyContent="space-between" alignItems="center" padding={16} borderRadius={12}>
-              <Text variant="titleMedium" fontWeight="600">
-                🔄 Show Route Alternatives
-              </Text>
-              <Switch
-                checked={showAlternatives}
-                onCheckedChange={setShowAlternatives}
-              />
+      {/* Top Search Bar Overlay */}
+      <View style={styles.searchOverlay}>
+        <SafeAreaView>
+          <Card style={styles.searchCard}>
+            <XStack space="sm" alignItems="center" padding={12}>
+              <View style={styles.searchIcon}>
+                <Ionicons name="search" size={20} color="#666" />
+              </View>
+              <YStack flex={1} space="xs">
+                <SearchErrorBoundary>
+                  <LocationSearch
+                    onLocationSelect={setStartPoint}
+                    placeholder="From"
+                    value={startPoint?.address}
+                  />
+                  <View style={styles.searchSeparator} />
+                  <LocationSearch
+                    onLocationSelect={setEndPoint}
+                    placeholder="To"
+                    value={endPoint?.address}
+                  />
+                </SearchErrorBoundary>
+              </YStack>
+              <TouchableOpacity 
+                style={styles.swapButton}
+                onPress={swapStartAndEnd}
+                disabled={!startPoint || !endPoint}
+              >
+                <Ionicons 
+                  name="swap-vertical" 
+                  size={20} 
+                  color={startPoint && endPoint ? "#4285F4" : "#ccc"} 
+                />
+              </TouchableOpacity>
             </XStack>
+          </Card>
+        </SafeAreaView>
+      </View>
 
-            {/* Route Alternatives Display with Error Boundary */}
+      {/* Floating Action Buttons */}
+      <View style={styles.fabContainer}>
+        {/* Current Location Button */}
+        <TouchableOpacity style={styles.fab} onPress={getCurrentLocation}>
+          <Ionicons name="locate" size={24} color="#4285F4" />
+        </TouchableOpacity>
+        
+        {/* Route Options Button */}
+        <TouchableOpacity style={styles.fab} onPress={toggleRouteControls}>
+          <Ionicons name="options" size={24} color="#4285F4" />
+        </TouchableOpacity>
+        
+        {/* Directions Button (when route is ready) */}
+        {canCalculateRoute && (
+          <TouchableOpacity 
+            style={[styles.fab, styles.primaryFab]} 
+            onPress={calculateRoute}
+            disabled={isCalculatingRoute}
+          >
+            <Ionicons 
+              name={isCalculatingRoute ? "ellipsis-horizontal" : "navigate"} 
+              size={24} 
+              color="white" 
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Route Controls Overlay */}
+      {showRouteControls && (
+        <View style={styles.routeControlsOverlay}>
+          <Card style={styles.routeControlsCard}>
+            <YStack padding={16} space="md">
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text variant="titleMedium" fontWeight="600">Route Options</Text>
+                <TouchableOpacity onPress={toggleRouteControls}>
+                  <Ionicons name="close" size={24} color="#666" />
+                </TouchableOpacity>
+              </XStack>
+              
+              <VehicleSelector
+                selectedVehicle={selectedVehicle}
+                onVehicleSelect={setSelectedVehicle}
+              />
+              
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text variant="bodyMedium">Show Alternatives</Text>
+                <Switch
+                  checked={showAlternatives}
+                  onCheckedChange={setShowAlternatives}
+                />
+              </XStack>
+            </YStack>
+          </Card>
+        </View>
+      )}
+
+      {/* Bottom Sheet */}
+      <Animated.View 
+        style={[styles.bottomSheet, { height: bottomSheetHeight }]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.bottomSheetHandle} />
+        
+        <ScrollView style={styles.bottomSheetContent} showsVerticalScrollIndicator={false}>
+          <YStack space="md" padding={20}>
+            {/* Header with route status */}
+            {!routeInfo && (
+              <YStack alignItems="center" space="sm" paddingVertical={20}>
+                <Ionicons name="map-outline" size={32} color="#ccc" />
+                <Text variant="titleMedium" color="#666">Plan your route</Text>
+                <Text variant="bodySmall" color="#999" textAlign="center">
+                  Enter start and destination points to get directions
+                </Text>
+              </YStack>
+            )}
+
+            {/* Quick Actions when no route */}
+            {!routeInfo && (
+              <XStack space="sm" justifyContent="center">
+                <Button
+                  onPress={getCurrentLocation}
+                  variant="tonal"
+                  style={styles.quickActionButton}
+                >
+                  <Ionicons name="locate" size={16} color="#4285F4" />
+                  <Text>Current Location</Text>
+                </Button>
+                
+                <Button
+                  onPress={toggleRouteControls}
+                  variant="outlined"
+                  style={styles.quickActionButton}
+                >
+                  <Ionicons name="options" size={16} color="#666" />
+                  <Text>Options</Text>
+                </Button>
+              </XStack>
+            )}
+
+            {/* Route Controls when route exists */}
+            {routeInfo && (
+              <XStack space="sm" justifyContent="center">
+                <Button
+                  onPress={saveRoute}
+                  variant="tonal"
+                  style={styles.secondaryButton}
+                >
+                  <Ionicons name="bookmark-outline" size={16} color="#4285F4" />
+                </Button>
+                
+                <Button
+                  onPress={clearRoute}
+                  variant="outlined"
+                  style={styles.secondaryButton}
+                >
+                  <Ionicons name="close" size={16} color="#666" />
+                </Button>
+              </XStack>
+            )}
+
+            {/* Route Information */}
+            {routeStats && (
+              <Card style={styles.routeInfoCard}>
+                <XStack justifyContent="space-around" padding={16}>
+                  <YStack alignItems="center">
+                    <Ionicons name="location" size={16} color="#666" />
+                    <Text variant="bodySmall" color="#666">Distance</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.distance}</Text>
+                  </YStack>
+                  <YStack alignItems="center">
+                    <Ionicons name="time" size={16} color="#666" />
+                    <Text variant="bodySmall" color="#666">Duration</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.duration}</Text>
+                  </YStack>
+                  <YStack alignItems="center">
+                    <Ionicons name="flag" size={16} color="#666" />
+                    <Text variant="bodySmall" color="#666">Stops</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.waypoints}</Text>
+                  </YStack>
+                </XStack>
+              </Card>
+            )}
+
+            {/* Route Alternatives */}
             {routeAlternatives.length > 0 && (
               <RouteErrorBoundary>
                 <RouteAlternatives
@@ -382,101 +620,152 @@ export default function RoutePlannerScreen() {
               </RouteErrorBoundary>
             )}
 
-            {/* Location Search with Error Boundary */}
-            <SearchErrorBoundary>
-              <LocationSearch
-                onLocationSelect={setStartPoint}
-                placeholder="Search for starting location..."
-                buttonText="Set Start"
-              />
-
-              <LocationSearch
-                onLocationSelect={setEndPoint}
-                placeholder="Search for destination..."
-                buttonText="Set End"
-              />
-            </SearchErrorBoundary>
-
-            {/* Action Buttons */}
-            <XStack space="md" justifyContent="center">
-              <Button
-                onPress={getCurrentLocation}
-                variant="tonal"
-                style={{ flex: 1 }}
-              >
-                📍 Use Current Location
-              </Button>
-              
-              <Button
-                onPress={calculateRoute}
-                disabled={!canCalculateRoute}
-                variant="filled"
-                style={{ flex: 1 }}
-              >
-                {isCalculatingRoute ? 'Calculating...' : '🗺️ Get Directions'}
-              </Button>
-            </XStack>
-
-            {/* Route Information */}
-            {routeStats && (
-              <YStack space="sm" padding={24} borderRadius={12}>
-                <Text variant="titleMedium" fontWeight="600" textAlign="center">
-                  Route Information
-                </Text>
-                <XStack justifyContent="space-around">
-                  <YStack alignItems="center">
-                    <Text variant="bodySmall">Distance</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.distance}</Text>
-                  </YStack>
-                  <YStack alignItems="center">
-                    <Text variant="bodySmall">Duration</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.duration}</Text>
-                  </YStack>
-                  <YStack alignItems="center">
-                    <Text variant="bodySmall">Waypoints</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.waypoints}</Text>
-                  </YStack>
-                </XStack>
-              </YStack>
-            )}
-
-            {/* Save/Clear Route */}
-            <XStack space="md" justifyContent="center">
-              <Button
-                onPress={saveRoute}
-                disabled={!routeInfo}
-                variant="tonal"
-                style={{ flex: 1 }}
-              >
-                💾 Save Route
-              </Button>
-              
-              <Button
-                onPress={clearRoute}
-                variant="outlined"
-                style={{ flex: 1 }}
-              >
-                🗑️ Clear Route
-              </Button>
-            </XStack>
-
             {/* Route Status */}
             {isRouteLoaded && (
-              <YStack padding={16} borderRadius={12}>
-                <Text variant="bodyMedium" textAlign="center">
-                  📂 Loaded saved route: "{loadedRoute?.name}"
-                </Text>
-              </YStack>
+              <Card style={styles.statusCard}>
+                <XStack alignItems="center" padding={12} space="sm">
+                  <Ionicons name="folder-open" size={16} color="#007AFF" />
+                  <Text variant="bodyMedium" flex={1}>
+                    Loaded: "{loadedRoute?.name}"
+                  </Text>
+                </XStack>
+              </Card>
             )}
           </YStack>
         </ScrollView>
-      </YStack>
-    </SafeAreaView>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+  },
+  searchOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  searchCard: {
+    margin: 16,
+    marginTop: 8,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  searchIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchSeparator: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginVertical: 4,
+  },
+  swapButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fabContainer: {
+    position: 'absolute',
+    right: 16,
+    bottom: 180,
+    zIndex: 100,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  primaryFab: {
+    backgroundColor: '#4285F4',
+  },
+  routeControlsOverlay: {
+    position: 'absolute',
+    top: 120,
+    left: 16,
+    right: 16,
+    zIndex: 100,
+  },
+  routeControlsCard: {
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  bottomSheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#ccc',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  bottomSheetContent: {
+    flex: 1,
+  },
+  primaryButton: {
+    flex: 1,
+    borderRadius: 24,
+  },
+  quickActionButton: {
+    flex: 1,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+  },
+  secondaryButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  routeInfoCard: {
+    borderRadius: 16,
+    backgroundColor: '#f8f9fa',
+  },
+  statusCard: {
+    borderRadius: 12,
+    backgroundColor: '#e3f2fd',
   },
 });

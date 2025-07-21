@@ -1,9 +1,8 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { StyleSheet, Alert, Text } from 'react-native';
+import { StyleSheet, Alert, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Location, WeatherPoint, Waypoint } from '@/types';
 import { RouteAlternative } from '@/services/routingService';
-// import { WeatherMarker } from './WeatherMarker';
 
 interface MapViewComponentProps {
   startPoint?: Location;
@@ -127,20 +126,20 @@ const MapViewComponent = React.memo(({
     Alert.alert(title, location.address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`, actions);
   }, [waypoints, onWaypointRemove]);
 
-  // Memoized calculations
+  // Google Maps style route colors
   const routeColors = useMemo(() => ({
-    'route-0': '#007AFF',
-    'route-1': '#34C759',
-    'route-2': '#FF9500',
+    'route-0': '#4285F4', // Google Blue
+    'route-1': '#34A853', // Google Green
+    'route-2': '#FBBC04', // Google Yellow
   }), []);
 
   const getRouteColor = useCallback((routeId: string, isSelected: boolean) => {
-    if (isSelected) return routeColors[routeId as keyof typeof routeColors] || '#007AFF';
-    return '#999999';
+    if (isSelected) return routeColors[routeId as keyof typeof routeColors] || '#4285F4';
+    return '#9AA0A6'; // Google Gray
   }, [routeColors]);
 
   const getRouteStrokeWidth = useCallback((routeId: string, isSelected: boolean) => {
-    return isSelected ? 5 : 3;
+    return isSelected ? 6 : 4;
   }, []);
 
   const getRouteZIndex = useCallback((routeId: string, isSelected: boolean) => {
@@ -209,6 +208,31 @@ const MapViewComponent = React.memo(({
     }
   }, [onRouteAlternativePress]);
 
+  // Google Maps style markers
+  const StartMarker = () => (
+    <View style={styles.startMarker}>
+      <View style={styles.startMarkerInner}>
+        <Text style={styles.markerText}>A</Text>
+      </View>
+    </View>
+  );
+
+  const EndMarker = () => (
+    <View style={styles.endMarker}>
+      <View style={styles.endMarkerInner}>
+        <Text style={styles.markerText}>B</Text>
+      </View>
+    </View>
+  );
+
+  const WaypointMarker = ({ order }: { order: number }) => (
+    <View style={styles.waypointMarker}>
+      <View style={styles.waypointMarkerInner}>
+        <Text style={styles.waypointMarkerText}>{order}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <MapView
       ref={mapRef}
@@ -218,10 +242,17 @@ const MapViewComponent = React.memo(({
       onPress={handleMapPress}
       onLongPress={handleMapLongPress}
       showsUserLocation
-      showsMyLocationButton
+      showsMyLocationButton={false} // We'll use our custom FAB
       loadingEnabled
-      loadingIndicatorColor="#007AFF"
+      loadingIndicatorColor="#4285F4"
       loadingBackgroundColor="#FFFFFF"
+      mapType="standard"
+      showsCompass={false}
+      showsScale={false}
+      showsBuildings
+      showsTraffic={false}
+      showsIndoors
+      toolbarEnabled={false}
     >
       {/* Route Alternatives Polylines (render first, so they appear behind selected route) */}
       {routeAlternativeCoordinates.map((route) => (
@@ -231,7 +262,7 @@ const MapViewComponent = React.memo(({
           strokeColor={getRouteColor(route.id, route.isSelected)}
           strokeWidth={getRouteStrokeWidth(route.id, route.isSelected)}
           zIndex={getRouteZIndex(route.id, route.isSelected)}
-          lineDashPattern={route.isSelected ? undefined : [5, 5]} // Dashed line for non-selected alternatives
+          lineDashPattern={route.isSelected ? undefined : [10, 10]} // Dashed line for non-selected alternatives
           tappable={true}
           onPress={() => handleRouteAlternativePress(route.id)}
         />
@@ -241,8 +272,8 @@ const MapViewComponent = React.memo(({
       {legacyRouteCoordinates.length > 0 && routeAlternatives.length === 0 && (
         <Polyline
           coordinates={legacyRouteCoordinates}
-          strokeColor="#007AFF"
-          strokeWidth={4}
+          strokeColor="#4285F4"
+          strokeWidth={6}
           zIndex={50}
         />
       )}
@@ -253,9 +284,11 @@ const MapViewComponent = React.memo(({
           coordinate={startPoint}
           title="Start Point"
           description="Your starting location"
-          pinColor="green"
           onPress={() => handleMarkerPress(startPoint, 'start')}
-        />
+          anchor={{ x: 0.5, y: 1 }}
+        >
+          <StartMarker />
+        </Marker>
       )}
 
       {/* Waypoint Markers */}
@@ -265,11 +298,10 @@ const MapViewComponent = React.memo(({
           coordinate={waypoint.location}
           title={`Waypoint ${waypoint.order}`}
           description={waypoint.location.address || "Intermediate stop"}
-          pinColor="blue"
           onPress={() => handleMarkerPress(waypoint.location, 'waypoint', waypoint.id)}
+          anchor={{ x: 0.5, y: 0.5 }}
         >
-          {/* Custom marker view for waypoints */}
-          <Text style={styles.waypointMarker}>{waypoint.order}</Text>
+          <WaypointMarker order={waypoint.order} />
         </Marker>
       ))}
 
@@ -279,9 +311,11 @@ const MapViewComponent = React.memo(({
           coordinate={endPoint}
           title="End Point"
           description="Your destination"
-          pinColor="red"
           onPress={() => handleMarkerPress(endPoint, 'end')}
-        />
+          anchor={{ x: 0.5, y: 1 }}
+        >
+          <EndMarker />
+        </Marker>
       )}
 
       {/* Weather Markers - Temporarily disabled */}
@@ -303,16 +337,74 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  waypointMarker: {
-    backgroundColor: '#007AFF',
+  // Google Maps style start marker (Green)
+  startMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  startMarkerInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#34A853',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  // Google Maps style end marker (Red)
+  endMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endMarkerInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EA4335',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  markerText: {
     color: 'white',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    textAlign: 'center',
-    lineHeight: 24,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  // Google Maps style waypoint marker (Blue)
+  waypointMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  waypointMarkerInner: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4285F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  waypointMarkerText: {
+    color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
-    overflow: 'hidden',
   },
 }); 
