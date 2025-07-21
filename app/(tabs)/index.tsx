@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, Alert } from 'react-native';
 import * as Location from 'expo-location';
 import { YStack, XStack, Button, Text, ScrollView, Switch } from 'tamagui';
@@ -9,6 +9,7 @@ import { MapViewComponent } from '@/components/MapView';
 import { VehicleSelector } from '@/components/VehicleSelector';
 import { LocationSearch } from '@/components/LocationSearch';
 import { RouteOptions } from '@/components/RouteOptions';
+import { MapErrorBoundary, RouteErrorBoundary, SearchErrorBoundary } from '@/components/ErrorBoundary';
 import { Location as LocationType, VehicleType, Route, WeatherPoint, Waypoint } from '@/types';
 import { RoutingService, RouteAlternative } from '@/services/routingService';
 import { WeatherService } from '@/services/weatherService';
@@ -47,7 +48,7 @@ export default function RoutePlannerScreen() {
     }, [loadedRoute, isRouteLoaded])
   );
 
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -59,9 +60,9 @@ export default function RoutePlannerScreen() {
     } catch (error) {
       console.error('Error requesting location permission:', error);
     }
-  };
+  }, []);
 
-  const getCurrentLocation = async () => {
+  const getCurrentLocation = useCallback(async () => {
     try {
       const { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -81,40 +82,50 @@ export default function RoutePlannerScreen() {
       console.error('Error getting current location:', error);
       Alert.alert('Error', 'Failed to get your current location. Please try again.');
     }
-  };
+  }, []);
 
-  const addWaypoint = (location: LocationType) => {
+  // Memoized waypoint management functions
+  const addWaypoint = useCallback((location: LocationType) => {
     const newWaypoint: Waypoint = {
       id: Date.now().toString(),
       location,
       order: waypoints.length + 1,
     };
-    setWaypoints([...waypoints, newWaypoint]);
-  };
+    setWaypoints(prev => [...prev, newWaypoint]);
+  }, [waypoints.length]);
 
-  const removeWaypoint = (waypointId: string) => {
-    const updatedWaypoints = waypoints
-      .filter(wp => wp.id !== waypointId)
-      .map((wp, index) => ({ ...wp, order: index + 1 })); // Reorder after removal
-    setWaypoints(updatedWaypoints);
-  };
+  const removeWaypoint = useCallback((waypointId: string) => {
+    setWaypoints(prev => {
+      const updatedWaypoints = prev
+        .filter(wp => wp.id !== waypointId)
+        .map((wp, index) => ({ ...wp, order: index + 1 })); // Reorder after removal
+      return updatedWaypoints;
+    });
+  }, []);
 
-  const reorderWaypoint = (waypointId: string, newOrder: number) => {
-    const updatedWaypoints = waypoints.map(wp => {
-      if (wp.id === waypointId) {
-        return { ...wp, order: newOrder };
-      }
-      // Adjust other waypoint orders
-      if (wp.order >= newOrder) {
-        return { ...wp, order: wp.order + 1 };
-      }
-      return wp;
-    }).sort((a, b) => a.order - b.order);
-    
-    setWaypoints(updatedWaypoints);
-  };
+  const reorderWaypoint = useCallback((waypointId: string, newOrder: number) => {
+    setWaypoints(prev => {
+      const updatedWaypoints = prev.map(wp => {
+        if (wp.id === waypointId) {
+          return { ...wp, order: newOrder };
+        }
+        // Adjust other waypoint orders
+        if (wp.order >= newOrder) {
+          return { ...wp, order: wp.order + 1 };
+        }
+        return wp;
+      }).sort((a, b) => a.order - b.order);
+      
+      return updatedWaypoints;
+    });
+  }, []);
 
-  const calculateRoute = async () => {
+  // Memoized route validation
+  const canCalculateRoute = useMemo(() => {
+    return !!(startPoint && endPoint && !isCalculatingRoute);
+  }, [startPoint, endPoint, isCalculatingRoute]);
+
+  const calculateRoute = useCallback(async () => {
     if (!startPoint || !endPoint) {
       Alert.alert('Missing Information', 'Please set both start and end points.');
       return;
@@ -189,9 +200,9 @@ export default function RoutePlannerScreen() {
     } finally {
       setIsCalculatingRoute(false);
     }
-  };
+  }, [startPoint, endPoint, waypoints, selectedVehicle, showAlternatives]);
 
-  const handleRouteSelect = (routeId: string, alternative: RouteAlternative) => {
+  const handleRouteSelect = useCallback((routeId: string, alternative: RouteAlternative) => {
     setSelectedRouteId(routeId);
     
     // Update route info and weather for selected route
@@ -203,16 +214,16 @@ export default function RoutePlannerScreen() {
     
     // Optionally recalculate weather for the new route
     // (for now, we'll keep the existing weather data)
-  };
+  }, []);
 
-  const handleRouteAlternativePress = (routeId: string) => {
+  const handleRouteAlternativePress = useCallback((routeId: string) => {
     const alternative = routeAlternatives.find(alt => alt.id === routeId);
     if (alternative) {
       handleRouteSelect(routeId, alternative);
     }
-  };
+  }, [routeAlternatives, handleRouteSelect]);
 
-  const saveRoute = async () => {
+  const saveRoute = useCallback(async () => {
     if (!startPoint || !endPoint || !routeInfo) {
       Alert.alert('Error', 'No route to save. Please calculate a route first.');
       return;
@@ -257,9 +268,9 @@ export default function RoutePlannerScreen() {
       ],
       'plain-text'
     );
-  };
+  }, [startPoint, endPoint, routeInfo, routeCoordinates, waypoints, weatherPoints, selectedVehicle]);
 
-  const clearRoute = () => {
+  const clearRoute = useCallback(() => {
     setStartPoint(undefined);
     setEndPoint(undefined);
     setWaypoints([]);
@@ -268,68 +279,75 @@ export default function RoutePlannerScreen() {
     setSelectedRouteId('route-0');
     setWeatherPoints([]);
     setRouteInfo(null);
-    setLoadedRoute(null);
-  };
-
-  const loadRouteData = (route: Route) => {
-    try {
-      setStartPoint(route.startPoint);
-      setEndPoint(route.endPoint);
-      setSelectedVehicle(route.vehicleType);
-      setRouteCoordinates(route.waypoints.map(wp => wp.location));
-      setWeatherPoints(route.weatherPoints);
-      setWaypoints(route.intermediateWaypoints || []);
-      setRouteAlternatives([]);
-      setSelectedRouteId('route-0');
-      setRouteInfo({
-        distance: route.totalDistance,
-        duration: route.totalDuration,
-      });
-      
-      // Clear the loaded route after applying it
+    if (isRouteLoaded) {
       setLoadedRoute(null);
-    } catch (error) {
-      console.error('Error loading route data:', error);
-      Alert.alert('Error', 'Failed to load route data.');
     }
-  };
+  }, [isRouteLoaded, setLoadedRoute]);
 
-  const formatDistance = (meters: number) => {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    }
-    return `${Math.round(meters / 1000 * 10) / 10}km`;
-  };
+  const loadRouteData = useCallback((route: Route) => {
+    setStartPoint(route.startPoint);
+    setEndPoint(route.endPoint);
+    setWaypoints(route.intermediateWaypoints || []);
+    setSelectedVehicle(route.vehicleType);
+    setRouteCoordinates(route.waypoints?.map(wp => wp.location) || []);
+    setWeatherPoints(route.weatherPoints || []);
+    setRouteAlternatives([]);
+    setSelectedRouteId('route-0');
+    setRouteInfo({
+      distance: route.totalDistance,
+      duration: route.totalDuration,
+    });
+  }, []);
 
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+  // Memoized route statistics formatting
+  const routeStats = useMemo(() => {
+    if (!routeInfo) return null;
     
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
+    const formatDistance = (meters: number) => {
+      if (meters < 1000) {
+        return `${Math.round(meters)}m`;
+      }
+      return `${Math.round(meters / 1000 * 10) / 10}km`;
+    };
+
+    const formatDuration = (seconds: number) => {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      
+      if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+      }
+      return `${minutes}m`;
+    };
+
+    return {
+      distance: formatDistance(routeInfo.distance),
+      duration: formatDuration(routeInfo.duration),
+      waypoints: waypoints.length,
+    };
+  }, [routeInfo, waypoints.length]);
 
   return (
     <SafeAreaView style={styles.container}>
       <YStack flex={1}>
-        {/* Map View */}
+        {/* Map View with Error Boundary */}
         <YStack flex={1}>
-          <MapViewComponent
-            startPoint={startPoint}
-            endPoint={endPoint}
-            waypoints={waypoints}
-            routeCoordinates={routeCoordinates}
-            routeAlternatives={routeAlternatives}
-            selectedRouteId={selectedRouteId}
-            weatherPoints={weatherPoints}
-            onStartPointChange={setStartPoint}
-            onEndPointChange={setEndPoint}
-            onWaypointAdd={addWaypoint}
-            onWaypointRemove={removeWaypoint}
-            onRouteAlternativePress={handleRouteAlternativePress}
-          />
+          <MapErrorBoundary>
+            <MapViewComponent
+              startPoint={startPoint}
+              endPoint={endPoint}
+              waypoints={waypoints}
+              routeCoordinates={routeCoordinates}
+              routeAlternatives={routeAlternatives}
+              selectedRouteId={selectedRouteId}
+              weatherPoints={weatherPoints}
+              onStartPointChange={setStartPoint}
+              onEndPointChange={setEndPoint}
+              onWaypointAdd={addWaypoint}
+              onWaypointRemove={removeWaypoint}
+              onRouteAlternativePress={handleRouteAlternativePress}
+            />
+          </MapErrorBoundary>
         </YStack>
 
         {/* Controls */}
@@ -353,151 +371,100 @@ export default function RoutePlannerScreen() {
               />
             </XStack>
 
-            {/* Route Alternatives Display */}
+            {/* Route Alternatives Display with Error Boundary */}
             {routeAlternatives.length > 0 && (
-              <RouteOptions
-                alternatives={routeAlternatives}
-                selectedRouteId={selectedRouteId}
-                onRouteSelect={handleRouteSelect}
-              />
+              <RouteErrorBoundary>
+                <RouteOptions
+                  alternatives={routeAlternatives}
+                  selectedRouteId={selectedRouteId}
+                  onRouteSelect={handleRouteSelect}
+                />
+              </RouteErrorBoundary>
             )}
 
-            {/* Location Search */}
-            <YStack space="$2">
-              <Text fontSize="$3" fontWeight="bold">
-                Search Locations
-              </Text>
+            {/* Location Search with Error Boundary */}
+            <SearchErrorBoundary>
               <LocationSearch
-                onLocationSelect={(location) => {
-                  if (!startPoint) {
-                    setStartPoint(location);
-                  } else if (!endPoint) {
-                    setEndPoint(location);
-                  } else {
-                    // If both are set, add as waypoint
-                    addWaypoint(location);
-                  }
-                }}
-                placeholder="Search for addresses, landmarks, or places..."
+                onLocationSelect={setStartPoint}
+                placeholder="Search for starting location..."
+                buttonText="Set Start"
               />
-            </YStack>
 
-            {/* Location Controls */}
-            <XStack space="$2">
-              <Button flex={1} onPress={getCurrentLocation}>
+              <LocationSearch
+                onLocationSelect={setEndPoint}
+                placeholder="Search for destination..."
+                buttonText="Set End"
+              />
+            </SearchErrorBoundary>
+
+            {/* Action Buttons */}
+            <XStack space="$2" justifyContent="center">
+              <Button
+                onPress={getCurrentLocation}
+                backgroundColor="$green7"
+                flex={1}
+              >
                 📍 Use Current Location
               </Button>
-              <Button flex={1} variant="outlined" onPress={clearRoute}>
-                Clear
-              </Button>
-            </XStack>
-
-            {/* Location Display */}
-            {(startPoint || endPoint || waypoints.length > 0) && (
-              <YStack space="$2" padding="$3" backgroundColor="$gray2" borderRadius="$3">
-                {startPoint && (
-                  <Text fontSize="$3">
-                    📍 Start: {startPoint.address || `${startPoint.latitude.toFixed(4)}, ${startPoint.longitude.toFixed(4)}`}
-                  </Text>
-                )}
-                {waypoints.map((waypoint) => (
-                  <XStack key={waypoint.id} justifyContent="space-between" alignItems="center">
-                    <Text fontSize="$3" flex={1}>
-                      🔵 Stop {waypoint.order}: {waypoint.location.address || `${waypoint.location.latitude.toFixed(4)}, ${waypoint.location.longitude.toFixed(4)}`}
-                    </Text>
-                    <Button
-                      size="$2"
-                      backgroundColor="$red7"
-                      onPress={() => removeWaypoint(waypoint.id)}
-                    >
-                      ✕
-                    </Button>
-                  </XStack>
-                ))}
-                {endPoint && (
-                  <Text fontSize="$3">
-                    🎯 End: {endPoint.address || `${endPoint.latitude.toFixed(4)}, ${endPoint.longitude.toFixed(4)}`}
-                  </Text>
-                )}
-              </YStack>
-            )}
-
-            {/* Waypoint Instructions */}
-            {waypoints.length === 0 && startPoint && endPoint && (
-              <YStack padding="$3" backgroundColor="$blue1" borderRadius="$3">
-                <Text fontSize="$3" textAlign="center" color="$blue11">
-                  💡 Long press on the map to add waypoints (intermediate stops)
-                </Text>
-              </YStack>
-            )}
-
-            {/* Route Calculation */}
-            <XStack space="$2">
-              <Button
-                flex={1}
-                backgroundColor="$blue7"
-                disabled={!startPoint || !endPoint || isCalculatingRoute}
-                onPress={calculateRoute}
-              >
-                {isCalculatingRoute ? 'Calculating...' : showAlternatives ? '🗺️ Get Route Options' : '🧭 Get Directions'}
-              </Button>
               
-              {routeInfo && (
-                <Button flex={1} variant="outlined" onPress={saveRoute}>
-                  💾 Save Route
-                </Button>
-              )}
+              <Button
+                onPress={calculateRoute}
+                disabled={!canCalculateRoute}
+                backgroundColor="$blue7"
+                flex={1}
+              >
+                {isCalculatingRoute ? 'Calculating...' : '🗺️ Get Directions'}
+              </Button>
             </XStack>
 
             {/* Route Information */}
-            {routeInfo && (
-              <YStack space="$2" padding="$3" backgroundColor="$blue2" borderRadius="$3">
+            {routeStats && (
+              <YStack space="$2" padding="$3" backgroundColor="$gray1" borderRadius="$3">
                 <Text fontSize="$4" fontWeight="bold" textAlign="center">
                   Route Information
-                  {routeAlternatives.length > 0 && (
-                    <Text fontSize="$3" color="$blue11">
-                      {' '}({routeAlternatives.find(alt => alt.id === selectedRouteId)?.description || 'Selected route'})
-                    </Text>
-                  )}
                 </Text>
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$3">
-                    📏 Distance: {formatDistance(routeInfo.distance)}
-                  </Text>
-                  <Text fontSize="$3">
-                    ⏱️ Duration: {formatDuration(routeInfo.duration)}
-                  </Text>
+                <XStack justifyContent="space-around">
+                  <YStack alignItems="center">
+                    <Text fontSize="$2" color="$gray11">Distance</Text>
+                    <Text fontSize="$3" fontWeight="bold">{routeStats.distance}</Text>
+                  </YStack>
+                  <YStack alignItems="center">
+                    <Text fontSize="$2" color="$gray11">Duration</Text>
+                    <Text fontSize="$3" fontWeight="bold">{routeStats.duration}</Text>
+                  </YStack>
+                  <YStack alignItems="center">
+                    <Text fontSize="$2" color="$gray11">Waypoints</Text>
+                    <Text fontSize="$3" fontWeight="bold">{routeStats.waypoints}</Text>
+                  </YStack>
                 </XStack>
-                {waypoints.length > 0 && (
-                  <Text fontSize="$3" textAlign="center">
-                    🔢 Stops: {waypoints.length} waypoint{waypoints.length > 1 ? 's' : ''}
-                  </Text>
-                )}
-                {routeAlternatives.length > 0 && (
-                  <Text fontSize="$3" textAlign="center">
-                    🗺️ Alternatives: {routeAlternatives.length} route{routeAlternatives.length > 1 ? 's' : ''}
-                  </Text>
-                )}
-                <Text fontSize="$2" color="$gray11" textAlign="center">
-                  Weather shown at 1km intervals along route
-                </Text>
               </YStack>
             )}
 
-            {/* Loaded Route Indicator */}
+            {/* Save/Clear Route */}
+            <XStack space="$2" justifyContent="center">
+              <Button
+                onPress={saveRoute}
+                disabled={!routeInfo}
+                backgroundColor="$purple7"
+                flex={1}
+              >
+                💾 Save Route
+              </Button>
+              
+              <Button
+                onPress={clearRoute}
+                backgroundColor="$red7"
+                flex={1}
+              >
+                🗑️ Clear Route
+              </Button>
+            </XStack>
+
+            {/* Route Status */}
             {isRouteLoaded && (
-              <YStack padding="$3" backgroundColor="$green2" borderRadius="$3">
-                <Text fontSize="$3" textAlign="center" color="$green11" fontWeight="bold">
-                  📍 Route "{loadedRoute?.name}" loaded from saved routes
-                </Text>
-              </YStack>
-            )}
-
-            {/* Instructions */}
-            {!startPoint && !endPoint && !isRouteLoaded && (
-              <YStack padding="$3" backgroundColor="$gray1" borderRadius="$3">
-                <Text fontSize="$3" textAlign="center" color="$gray11">
-                  Tap on the map to set start and end points, or use "Use Current Location" button
+              <YStack padding="$2" backgroundColor="$blue2" borderRadius="$3">
+                <Text fontSize="$3" textAlign="center" color="$blue11">
+                  📂 Loaded saved route: "{loadedRoute?.name}"
                 </Text>
               </YStack>
             )}

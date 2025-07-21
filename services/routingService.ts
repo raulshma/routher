@@ -2,6 +2,80 @@ import { Location, RoutePoint, VehicleType, Waypoint } from '@/types';
 
 const OSRM_BASE_URL = 'https://router.project-osrm.org';
 
+// Route caching system
+interface CacheEntry {
+  result: any;
+  timestamp: number;
+  expiryTime: number;
+}
+
+class RouteCache {
+  private cache = new Map<string, CacheEntry>();
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+  private readonly MAX_CACHE_SIZE = 50; // Maximum number of cached routes
+
+  private generateCacheKey(
+    startPoint: Location,
+    endPoint: Location,
+    vehicleType: VehicleType,
+    waypoints?: Waypoint[]
+  ): string {
+    const waypointKey = waypoints 
+      ? waypoints.map(wp => `${wp.location.latitude.toFixed(6)},${wp.location.longitude.toFixed(6)}`).join('|')
+      : '';
+    
+    return `${startPoint.latitude.toFixed(6)},${startPoint.longitude.toFixed(6)}-${endPoint.latitude.toFixed(6)},${endPoint.longitude.toFixed(6)}-${vehicleType}-${waypointKey}`;
+  }
+
+  get(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    if (Date.now() > entry.expiryTime) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.result;
+  }
+
+  set(key: string, result: any): void {
+    // Remove oldest entries if cache is full
+    if (this.cache.size >= this.MAX_CACHE_SIZE) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+    
+    this.cache.set(key, {
+      result,
+      timestamp: Date.now(),
+      expiryTime: Date.now() + this.CACHE_DURATION,
+    });
+  }
+
+  getCacheKey(
+    startPoint: Location,
+    endPoint: Location,
+    vehicleType: VehicleType,
+    waypoints?: Waypoint[]
+  ): string {
+    return this.generateCacheKey(startPoint, endPoint, vehicleType, waypoints);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  getStats(): { size: number; maxSize: number } {
+    return {
+      size: this.cache.size,
+      maxSize: this.MAX_CACHE_SIZE,
+    };
+  }
+}
+
 export interface RouteAlternative {
   id: string;
   routePoints: RoutePoint[];
@@ -12,6 +86,8 @@ export interface RouteAlternative {
 }
 
 export class RoutingService {
+  private static routeCache = new RouteCache();
+
   static getProfileForVehicle(vehicleType: VehicleType): string {
     switch (vehicleType) {
       case 'car':
@@ -31,6 +107,14 @@ export class RoutingService {
     vehicleType: VehicleType,
     intermediateWaypoints: Waypoint[] = []
   ): Promise<RoutePoint[]> {
+    // Check cache first
+    const cacheKey = this.routeCache.getCacheKey(startPoint, endPoint, vehicleType, intermediateWaypoints);
+    const cachedResult = this.routeCache.get(cacheKey);
+    if (cachedResult) {
+      console.log('Using cached route result');
+      return cachedResult;
+    }
+
     try {
       const profile = this.getProfileForVehicle(vehicleType);
       
@@ -80,12 +164,15 @@ export class RoutingService {
         });
       });
       
+      // Cache the result
+      this.routeCache.set(cacheKey, routePoints);
+      
       return routePoints;
     } catch (error) {
       console.error('Error calculating route:', error);
       // Return a simple direct route for demo purposes
       const allPoints = [startPoint, ...intermediateWaypoints.map(wp => wp.location), endPoint];
-      return allPoints.map((point, index) => ({
+      const fallbackResult = allPoints.map((point, index) => ({
         location: point,
         instructions: index === 0 ? 'Start your journey' : 
                      index === allPoints.length - 1 ? 'Arrive at destination' :
@@ -93,6 +180,10 @@ export class RoutingService {
         distance: index > 0 ? this.calculateDistance(allPoints[index - 1], point) : 0,
         duration: index > 0 ? this.estimateDuration(allPoints[index - 1], point, vehicleType) : 0,
       }));
+      
+      // Cache fallback result too (with shorter expiry)
+      this.routeCache.set(cacheKey, fallbackResult);
+      return fallbackResult;
     }
   }
 
@@ -103,6 +194,14 @@ export class RoutingService {
     intermediateWaypoints: Waypoint[] = [],
     maxAlternatives: number = 3
   ): Promise<RouteAlternative[]> {
+    // Check cache for alternatives
+    const alternativesCacheKey = `alternatives-${this.routeCache.getCacheKey(startPoint, endPoint, vehicleType, intermediateWaypoints)}-${maxAlternatives}`;
+    const cachedAlternatives = this.routeCache.get(alternativesCacheKey);
+    if (cachedAlternatives) {
+      console.log('Using cached route alternatives');
+      return cachedAlternatives;
+    }
+
     try {
       const profile = this.getProfileForVehicle(vehicleType);
       
@@ -115,7 +214,7 @@ export class RoutingService {
         .join(';');
       
       const response = await fetch(
-        `${OSRM_BASE_URL}/route/v1/${profile}/${coordinates}?steps=true&geometries=geojson&overview=full&alternatives=${maxAlternatives}`
+        `${OSRM_BASE_URL}/route/v1/${profile}/${coordinates}?alternatives=${maxAlternatives}&steps=true&geometries=geojson&overview=full`
       );
       
       if (!response.ok) {
@@ -131,7 +230,7 @@ export class RoutingService {
       const alternatives: RouteAlternative[] = data.routes.map((route: any, index: number) => {
         const routePoints: RoutePoint[] = [];
         
-        // Process each leg of the route (between consecutive points)
+        // Process each leg of the route
         route.legs.forEach((leg: any, legIndex: number) => {
           const steps = leg.steps || [];
           
@@ -151,43 +250,82 @@ export class RoutingService {
             });
           });
         });
-
-        // Extract geometry coordinates from the route
-        const geometry: Location[] = route.geometry.coordinates.map((coord: [number, number]) => ({
-          longitude: coord[0],
-          latitude: coord[1],
-        }));
-
+        
         // Generate description based on route characteristics
-        const description = this.generateRouteDescription(route, index);
-
+        let description = 'Alternative route';
+        if (index === 0) {
+          // Determine the best characteristic of the main route
+          const fastestRoute = data.routes.reduce((fastest: any, current: any) => 
+            current.duration < fastest.duration ? current : fastest
+          );
+          const shortestRoute = data.routes.reduce((shortest: any, current: any) => 
+            current.distance < shortest.distance ? current : shortest
+          );
+          
+          if (route.duration === fastestRoute.duration) {
+            description = 'Fastest route';
+          } else if (route.distance === shortestRoute.distance) {
+            description = 'Shortest route';
+          } else {
+            description = 'Recommended route';
+          }
+        } else if (data.routes.length > 1) {
+          // Compare with the first route to determine characteristics
+          const mainRoute = data.routes[0];
+          if (route.duration < mainRoute.duration) {
+            description = 'Faster alternative';
+          } else if (route.distance < mainRoute.distance) {
+            description = 'Shorter alternative';
+          } else {
+            description = `Alternative route ${index + 1}`;
+          }
+        }
+        
         return {
           id: `route-${index}`,
           routePoints,
           totalDistance: route.distance,
           totalDuration: route.duration,
-          geometry,
+          geometry: route.geometry.coordinates.map((coord: [number, number]) => ({
+            latitude: coord[1],
+            longitude: coord[0],
+          })),
           description,
         };
       });
-
+      
+      // Cache the alternatives
+      this.routeCache.set(alternativesCacheKey, alternatives);
+      
       return alternatives;
     } catch (error) {
       console.error('Error calculating route alternatives:', error);
-      // Return fallback with single route
-      const routePoints = await this.calculateRoute(startPoint, endPoint, vehicleType, intermediateWaypoints);
-      const totalDistance = routePoints.reduce((sum, point) => sum + (point.distance || 0), 0);
-      const totalDuration = routePoints.reduce((sum, point) => sum + (point.duration || 0), 0);
       
-      return [{
+      // Fallback: return single route as alternative
+      const fallbackRoute = await this.calculateRoute(startPoint, endPoint, vehicleType, intermediateWaypoints);
+      const alternatives: RouteAlternative[] = [{
         id: 'route-0',
-        routePoints,
-        totalDistance,
-        totalDuration,
-        geometry: routePoints.map(point => point.location),
-        description: 'Main route',
+        routePoints: fallbackRoute,
+        totalDistance: fallbackRoute.reduce((sum, point) => sum + (point.distance || 0), 0),
+        totalDuration: fallbackRoute.reduce((sum, point) => sum + (point.duration || 0), 0),
+        geometry: fallbackRoute.map(point => point.location),
+        description: 'Route (offline mode)',
       }];
+      
+      // Cache fallback alternatives
+      this.routeCache.set(alternativesCacheKey, alternatives);
+      return alternatives;
     }
+  }
+
+  // Utility method to clear cache (useful for memory management)
+  static clearCache(): void {
+    this.routeCache.clear();
+  }
+
+  // Get cache statistics
+  static getCacheStats(): { size: number; maxSize: number } {
+    return this.routeCache.getStats();
   }
 
   private static generateRouteDescription(route: any, index: number): string {

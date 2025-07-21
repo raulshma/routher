@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { SavedRoute, VehicleType, WeatherPoint, RoutePoint } from '@/types';
 import { StorageService } from '@/services/storageService';
+import { ExportService } from '@/services/exportService';
 import { RouteDirections } from '@/components/RouteDirections';
 import { WeatherSegment } from '@/components/WeatherSegment';
 
@@ -15,6 +16,7 @@ export default function RouteDetailsScreen() {
   const [route, setRoute] = useState<SavedRoute | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'directions' | 'weather'>('overview');
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   React.useEffect(() => {
     loadRouteDetails();
@@ -100,8 +102,55 @@ export default function RouteDetailsScreen() {
     Alert.alert('Coming Soon', 'Route sharing will be implemented in a future update');
   };
 
-  const exportRoute = () => {
-    Alert.alert('Coming Soon', 'Route export will be implemented in a future update');
+  const handleExport = async (format: 'gpx' | 'kml' | 'both') => {
+    if (!route) return;
+    
+    setIsExporting(true);
+    try {
+      switch (format) {
+        case 'gpx':
+          await ExportService.exportGPX(route);
+          Alert.alert('Success', 'Route exported as GPX file');
+          break;
+        case 'kml':
+          await ExportService.exportKML(route);
+          Alert.alert('Success', 'Route exported as KML file');
+          break;
+        case 'both':
+          await ExportService.exportBoth(route);
+          Alert.alert('Success', 'Route exported as both GPX and KML files');
+          break;
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert('Error', 'Failed to export route. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const showExportOptions = () => {
+    const formats = ExportService.getSupportedFormats();
+    
+    Alert.alert(
+      'Export Route',
+      'Choose export format:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: `📍 ${formats[0].name} (${formats[0].extension})`,
+          onPress: () => handleExport('gpx'),
+        },
+        {
+          text: `🌍 ${formats[1].name} (${formats[1].extension})`,
+          onPress: () => handleExport('kml'),
+        },
+        {
+          text: '📦 Both Formats',
+          onPress: () => handleExport('both'),
+        },
+      ]
+    );
   };
 
   if (isLoading) {
@@ -118,12 +167,9 @@ export default function RouteDetailsScreen() {
   if (!route) {
     return (
       <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ title: 'Route Not Found' }} />
+        <Stack.Screen options={{ title: 'Error' }} />
         <YStack flex={1} justifyContent="center" alignItems="center">
           <Text fontSize="$4">Route not found</Text>
-          <Button onPress={() => router.back()} marginTop="$4">
-            Go Back
-          </Button>
         </YStack>
       </SafeAreaView>
     );
@@ -131,177 +177,223 @@ export default function RouteDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{
-          title: route.name,
-          headerRight: () => (
-            <XStack space="$2">
-              <Button
-                size="$2"
-                variant="outlined"
-                onPress={toggleFavorite}
-              >
-                {route.isFavorite ? '⭐' : '☆'}
-              </Button>
-              <Button
-                size="$2"
-                variant="outlined"
-                onPress={shareRoute}
-              >
-                📤
-              </Button>
-            </XStack>
-          ),
-        }}
-      />
-      
-      <YStack flex={1}>
-        {/* Tab Navigation */}
-        <XStack backgroundColor="$background" borderBottomWidth={1} borderColor="$gray6">
-          {[
-            { key: 'overview', label: 'Overview', icon: '📊' },
-            { key: 'directions', label: 'Directions', icon: '🧭' },
-            { key: 'weather', label: 'Weather', icon: '🌤️' },
-          ].map((tab) => (
+      <Stack.Screen options={{ 
+        title: route.name,
+        headerRight: () => (
+          <XStack space="$2">
             <Button
-              key={tab.key}
-              flex={1}
-              variant="outlined"
-              backgroundColor={activeTab === tab.key ? '$blue2' : 'transparent'}
-              borderColor={activeTab === tab.key ? '$blue7' : 'transparent'}
-              borderBottomWidth={2}
-              borderRadius={0}
-              onPress={() => setActiveTab(tab.key as typeof activeTab)}
+              size="$3"
+              backgroundColor={route.isFavorite ? "$yellow7" : "$gray7"}
+              onPress={toggleFavorite}
+              circular
             >
-              <YStack alignItems="center" space="$1">
-                <Text fontSize="$4">{tab.icon}</Text>
-                <Text 
-                  fontSize="$2" 
-                  color={activeTab === tab.key ? '$blue11' : '$gray11'}
-                  fontWeight={activeTab === tab.key ? 'bold' : 'normal'}
-                >
-                  {tab.label}
-                </Text>
-              </YStack>
+              {route.isFavorite ? "⭐" : "☆"}
             </Button>
-          ))}
-        </XStack>
+          </XStack>
+        ),
+      }} />
+      
+      <ScrollView style={styles.scrollView}>
+        <YStack padding="$4" space="$4">
+          {/* Route Header */}
+          <Card padding="$4" backgroundColor="$blue2">
+            <YStack space="$3">
+              <XStack justifyContent="space-between" alignItems="center">
+                <Text fontSize="$6" fontWeight="bold" color="$blue11">
+                  {getVehicleIcon(route.vehicleType)} {route.name}
+                </Text>
+                {route.isFavorite && (
+                  <Text fontSize="$5">⭐</Text>
+                )}
+              </XStack>
+              
+              <XStack justifyContent="space-between">
+                <YStack alignItems="center">
+                  <Text fontSize="$2" color="$blue10">Distance</Text>
+                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                    {formatDistance(route.totalDistance)}
+                  </Text>
+                </YStack>
+                <YStack alignItems="center">
+                  <Text fontSize="$2" color="$blue10">Duration</Text>
+                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                    {formatDuration(route.totalDuration)}
+                  </Text>
+                </YStack>
+                <YStack alignItems="center">
+                  <Text fontSize="$2" color="$blue10">Vehicle</Text>
+                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                    {route.vehicleType}
+                  </Text>
+                </YStack>
+              </XStack>
+              
+              <Text fontSize="$3" color="$blue10" textAlign="center">
+                Created on {formatDate(route.createdAt)}
+              </Text>
+            </YStack>
+          </Card>
 
-        {/* Tab Content */}
-        <ScrollView style={{ flex: 1 }}>
-          <YStack padding="$3" space="$3">
-            {activeTab === 'overview' && (
-              <>
-                {/* Route Header */}
-                <Card padding="$4" backgroundColor="$blue2">
-                  <YStack space="$3">
-                    <XStack justifyContent="space-between" alignItems="center">
+          {/* Action Buttons */}
+          <XStack space="$2" justifyContent="center">
+            <Button
+              onPress={shareRoute}
+              backgroundColor="$green7"
+              flex={1}
+              disabled={isExporting}
+            >
+              📤 Share
+            </Button>
+            
+            <Button
+              onPress={showExportOptions}
+              backgroundColor="$purple7"
+              flex={1}
+              disabled={isExporting}
+            >
+              {isExporting ? '⏳ Exporting...' : '💾 Export'}
+            </Button>
+          </XStack>
+
+          {/* Export Info */}
+          <Card padding="$3" backgroundColor="$gray1">
+            <YStack space="$2">
+              <Text fontSize="$4" fontWeight="bold">
+                📁 Export Options
+              </Text>
+              <Text fontSize="$3" color="$gray11">
+                • GPX: For GPS devices and navigation apps
+              </Text>
+              <Text fontSize="$3" color="$gray11">
+                • KML: For Google Earth and Google Maps
+              </Text>
+              <Text fontSize="$2" color="$gray10">
+                Exported files include route path, waypoints, and weather data
+              </Text>
+            </YStack>
+          </Card>
+
+          {/* Tab Navigation */}
+          <XStack backgroundColor="$gray2" borderRadius="$3" padding="$1">
+            {(['overview', 'directions', 'weather'] as const).map((tab) => (
+              <Button
+                key={tab}
+                flex={1}
+                size="$3"
+                backgroundColor={activeTab === tab ? '$blue7' : 'transparent'}
+                color={activeTab === tab ? 'white' : '$gray11'}
+                onPress={() => setActiveTab(tab)}
+              >
+                {tab === 'overview' && '📋 Overview'}
+                {tab === 'directions' && '🧭 Directions'}
+                {tab === 'weather' && '🌤️ Weather'}
+              </Button>
+            ))}
+          </XStack>
+
+          {/* Tab Content */}
+          {activeTab === 'overview' && (
+            <YStack space="$3">
+              {/* Route Points */}
+              <Card padding="$4" backgroundColor="$background">
+                <YStack space="$3">
+                  <Text fontSize="$5" fontWeight="bold">
+                    📍 Route Points
+                  </Text>
+                  
+                  <YStack space="$2">
+                    <XStack alignItems="center" space="$3">
+                      <Text fontSize="$4">🟢</Text>
                       <YStack flex={1}>
-                        <XStack alignItems="center" space="$2">
-                          <Text fontSize="$3">{getVehicleIcon(route.vehicleType)}</Text>
-                          <Text fontSize="$6" fontWeight="bold">
-                            {route.name}
-                          </Text>
-                        </XStack>
-                        <Text fontSize="$3" color="$gray11">
-                          Created {formatDate(route.createdAt)}
+                        <Text fontSize="$3" fontWeight="bold">Start</Text>
+                        <Text fontSize="$2" color="$gray11">
+                          {route.startPoint.address || `${route.startPoint.latitude.toFixed(4)}, ${route.startPoint.longitude.toFixed(4)}`}
                         </Text>
                       </YStack>
                     </XStack>
 
-                    {/* Key Metrics */}
-                    <XStack justifyContent="space-around">
-                      <YStack alignItems="center">
-                        <Text fontSize="$5" fontWeight="bold">
-                          {formatDistance(route.totalDistance)}
-                        </Text>
+                    {route.intermediateWaypoints?.map((waypoint, index) => (
+                      <XStack key={waypoint.id} alignItems="center" space="$3">
+                        <Text fontSize="$4">🔵</Text>
+                        <YStack flex={1}>
+                          <Text fontSize="$3" fontWeight="bold">Stop {waypoint.order}</Text>
+                          <Text fontSize="$2" color="$gray11">
+                            {waypoint.location.address || `${waypoint.location.latitude.toFixed(4)}, ${waypoint.location.longitude.toFixed(4)}`}
+                          </Text>
+                        </YStack>
+                      </XStack>
+                    )) || null}
+
+                    <XStack alignItems="center" space="$3">
+                      <Text fontSize="$4">🔴</Text>
+                      <YStack flex={1}>
+                        <Text fontSize="$3" fontWeight="bold">Destination</Text>
                         <Text fontSize="$2" color="$gray11">
-                          Distance
-                        </Text>
-                      </YStack>
-                      <YStack alignItems="center">
-                        <Text fontSize="$5" fontWeight="bold">
-                          {formatDuration(route.totalDuration)}
-                        </Text>
-                        <Text fontSize="$2" color="$gray11">
-                          Duration
-                        </Text>
-                      </YStack>
-                      <YStack alignItems="center">
-                        <Text fontSize="$5" fontWeight="bold">
-                          {route.weatherPoints.length}
-                        </Text>
-                        <Text fontSize="$2" color="$gray11">
-                          Weather Points
+                          {route.endPoint.address || `${route.endPoint.latitude.toFixed(4)}, ${route.endPoint.longitude.toFixed(4)}`}
                         </Text>
                       </YStack>
                     </XStack>
                   </YStack>
-                </Card>
+                </YStack>
+              </Card>
 
-                {/* Route Points */}
-                <Card padding="$3">
-                  <YStack space="$3">
-                    <Text fontSize="$4" fontWeight="bold">
-                      Route Points
-                    </Text>
-                    
-                    <YStack space="$2">
-                      <XStack alignItems="center" space="$3">
-                        <Text fontSize="$4" color="$green9">📍</Text>
-                        <YStack flex={1}>
-                          <Text fontSize="$3" fontWeight="bold">Start</Text>
-                          <Text fontSize="$2" color="$gray11" numberOfLines={2}>
-                            {route.startPoint.address || 
-                             `${route.startPoint.latitude.toFixed(4)}, ${route.startPoint.longitude.toFixed(4)}`}
-                          </Text>
-                        </YStack>
-                      </XStack>
-                      
-                      <Separator borderColor="$gray4" />
-                      
-                      <XStack alignItems="center" space="$3">
-                        <Text fontSize="$4" color="$red9">🎯</Text>
-                        <YStack flex={1}>
-                          <Text fontSize="$3" fontWeight="bold">Destination</Text>
-                          <Text fontSize="$2" color="$gray11" numberOfLines={2}>
-                            {route.endPoint.address || 
-                             `${route.endPoint.latitude.toFixed(4)}, ${route.endPoint.longitude.toFixed(4)}`}
-                          </Text>
-                        </YStack>
-                      </XStack>
+              {/* Route Statistics */}
+              <Card padding="$4" backgroundColor="$background">
+                <YStack space="$3">
+                  <Text fontSize="$5" fontWeight="bold">
+                    📊 Statistics
+                  </Text>
+                  
+                  <XStack justifyContent="space-between">
+                    <YStack alignItems="center">
+                      <Text fontSize="$2" color="$gray11">Total Waypoints</Text>
+                      <Text fontSize="$4" fontWeight="bold">
+                        {(route.intermediateWaypoints?.length || 0) + 2}
+                      </Text>
                     </YStack>
-                  </YStack>
-                </Card>
+                    <YStack alignItems="center">
+                      <Text fontSize="$2" color="$gray11">Weather Points</Text>
+                      <Text fontSize="$4" fontWeight="bold">
+                        {route.weatherPoints?.length || 0}
+                      </Text>
+                    </YStack>
+                    <YStack alignItems="center">
+                      <Text fontSize="$2" color="$gray11">Route Points</Text>
+                      <Text fontSize="$4" fontWeight="bold">
+                        {route.waypoints?.length || 0}
+                      </Text>
+                    </YStack>
+                  </XStack>
+                </YStack>
+              </Card>
+            </YStack>
+          )}
 
-                {/* Action Buttons */}
-                <XStack space="$2">
-                  <Button flex={1} backgroundColor="$blue7" onPress={() => router.push('/')}>
-                    📍 Load to Map
-                  </Button>
-                  <Button flex={1} variant="outlined" onPress={exportRoute}>
-                    📤 Export
-                  </Button>
-                </XStack>
-              </>
-            )}
+          {activeTab === 'directions' && route.waypoints && (
+            <RouteDirections 
+              waypoints={route.waypoints.map(wp => ({
+                location: wp.location,
+                instructions: 'Continue on route',
+                distance: 0,
+                duration: 0,
+              }))}
+            />
+          )}
 
-            {activeTab === 'directions' && (
-              <RouteDirections waypoints={route.waypoints} />
-            )}
-
-            {activeTab === 'weather' && (
-              <WeatherSegment weatherPoints={route.weatherPoints} />
-            )}
-          </YStack>
-        </ScrollView>
-      </YStack>
+          {activeTab === 'weather' && route.weatherPoints && (
+            <WeatherSegment weatherPoints={route.weatherPoints} />
+          )}
+        </YStack>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
 }); 
