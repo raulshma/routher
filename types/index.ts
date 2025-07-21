@@ -11,6 +11,12 @@ export interface RoutePoint {
   duration?: number;
 }
 
+export interface Waypoint {
+  id: string;
+  location: Location;
+  order: number;
+}
+
 export interface WeatherData {
   temperature: number;
   description: string;
@@ -32,6 +38,7 @@ export interface Route {
   startPoint: Location;
   endPoint: Location;
   waypoints: RoutePoint[];
+  intermediateWaypoints: Waypoint[]; // New: intermediate stops between start and end
   weatherPoints: WeatherPoint[];
   vehicleType: VehicleType;
   totalDistance: number;

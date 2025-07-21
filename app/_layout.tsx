@@ -1,15 +1,15 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import 'react-native-reanimated';
-import { TamaguiProvider } from 'tamagui';
+import 'react-native-reanimated/lib/reanimated-js/Reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
-import { RouteProvider } from '@/contexts/RouteContext';
+import { TamaguiProvider } from '@tamagui/core';
 import config from '../tamagui.config';
+import { RouteProvider } from '@/contexts/RouteContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -23,6 +23,38 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+function RootLayoutNav() {
+  const { isDark } = useTheme();
+
+  return (
+    <TamaguiProvider config={config} defaultTheme={isDark ? 'dark' : 'light'}>
+      <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+        <RouteProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen 
+              name="route-details" 
+              options={{ 
+                headerShown: true,
+                title: 'Route Details',
+                presentation: 'card',
+              }} 
+            />
+            <Stack.Screen 
+              name="settings" 
+              options={{ 
+                headerShown: false,
+                presentation: 'modal',
+              }} 
+            />
+          </Stack>
+        </RouteProvider>
+      </NavigationThemeProvider>
+    </TamaguiProvider>
+  );
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -45,22 +77,9 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <TamaguiProvider config={config} defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <RouteProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
-        </RouteProvider>
-      </ThemeProvider>
-    </TamaguiProvider>
+    <ThemeProvider>
+      <RootLayoutNav />
+    </ThemeProvider>
   );
 }
