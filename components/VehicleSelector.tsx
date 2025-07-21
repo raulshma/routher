@@ -1,55 +1,66 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { Button, XStack, YStack, Text } from 'tamagui';
-import { VehicleType } from '@/types';
+import { Pressable, ViewStyle } from 'react-native';
+import { YStack, XStack, Text, Button } from './ui';
+import { VehicleType } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { getFontSize, getSpacingKey, getFontWeight } from '../constants/UISizes';
 
 interface VehicleSelectorProps {
   selectedVehicle: VehicleType;
   onVehicleSelect: (vehicle: VehicleType) => void;
 }
 
-export function VehicleSelector({ selectedVehicle, onVehicleSelect }: VehicleSelectorProps) {
-  const vehicles: { type: VehicleType; label: string; icon: string }[] = [
-    { type: 'car', label: 'Car', icon: '🚗' },
-    { type: 'bicycle', label: 'Bicycle', icon: '🚴' },
-    { type: 'walking', label: 'Walking', icon: '🚶' },
-  ];
+const vehicleOptions = [
+  { type: 'driving' as VehicleType, label: 'Car', icon: '🚗' },
+  { type: 'bicycle' as VehicleType, label: 'Bike', icon: '🚴' },
+  { type: 'walking' as VehicleType, label: 'Walk', icon: '🚶' },
+];
+
+export const VehicleSelector: React.FC<VehicleSelectorProps> = ({
+  selectedVehicle,
+  onVehicleSelect,
+}) => {
+  const { colors } = useTheme();
 
   return (
-    <YStack space="$2" padding="$3">
-      <Text fontSize="$4" fontWeight="bold" textAlign="center">
-        Select Vehicle Type
+    <YStack space="sm" padding={16}>
+      <Text fontSize={getFontSize('$4')} fontWeight={getFontWeight('700')} textAlign="center">
+        Select Transportation
       </Text>
-      <XStack space="$2" justifyContent="center">
-        {vehicles.map((vehicle) => (
-          <Button
+      
+      <XStack space="sm" justifyContent="center">
+        {vehicleOptions.map((vehicle) => (
+          <Pressable
             key={vehicle.type}
-            flex={1}
-            variant={selectedVehicle === vehicle.type ? 'outlined' : 'outlined'}
-            backgroundColor={selectedVehicle === vehicle.type ? '$blue5' : 'transparent'}
-            borderColor={selectedVehicle === vehicle.type ? '$blue7' : '$gray7'}
             onPress={() => onVehicleSelect(vehicle.type)}
-            style={styles.vehicleButton}
+            style={[
+              {
+                flex: 1,
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: selectedVehicle === vehicle.type ? colors.primary : colors.outline,
+                backgroundColor: selectedVehicle === vehicle.type ? colors.primaryContainer : colors.surface,
+                minHeight: 80,
+                justifyContent: 'center',
+                alignItems: 'center',
+                padding: 12,
+              } as ViewStyle
+            ]}
           >
-            <YStack alignItems="center" space="$1">
-              <Text fontSize="$6">{vehicle.icon}</Text>
+            <YStack alignItems="center" space="xs">
+              <Text fontSize={getFontSize('$6')}>{vehicle.icon}</Text>
               <Text 
-                fontSize="$2" 
-                color={selectedVehicle === vehicle.type ? '$blue11' : '$gray11'}
-                fontWeight={selectedVehicle === vehicle.type ? 'bold' : 'normal'}
+                fontSize={getFontSize('$2')}
+                color={selectedVehicle === vehicle.type ? colors.onPrimaryContainer : colors.onSurface}
+                fontWeight={selectedVehicle === vehicle.type ? getFontWeight('700') : getFontWeight('400')}
+                textAlign="center"
               >
                 {vehicle.label}
               </Text>
             </YStack>
-          </Button>
+          </Pressable>
         ))}
       </XStack>
     </YStack>
   );
-}
-
-const styles = StyleSheet.create({
-  vehicleButton: {
-    minHeight: 80,
-  },
-}); 
+}; 

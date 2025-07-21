@@ -1,155 +1,135 @@
-import React, { useCallback } from 'react';
-import { StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { YStack, XStack, Text, Separator } from 'tamagui';
-import { SearchSuggestion, GeocodingService } from '@/services/geocodingService';
+import React from 'react';
+import { FlatList, Pressable } from 'react-native';
+import { Card, Text, YStack, XStack, Separator } from './ui';
+import { SearchSuggestion } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { getFontSize, getSpacingKey, getFontWeight } from '../constants/UISizes';
 
 interface SearchSuggestionsProps {
   suggestions: SearchSuggestion[];
-  isLoading: boolean;
-  hasMore: boolean;
-  onSuggestionPress: (suggestion: SearchSuggestion) => void;
-  onClearRecent?: () => void;
-  showRecentHeader?: boolean;
+  onSuggestionSelect: (suggestion: SearchSuggestion) => void;
+  isLoading?: boolean;
+  error?: string;
+  searchQuery?: string;
 }
 
-const SearchSuggestions = React.memo(({
+export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
   suggestions,
-  isLoading,
-  hasMore,
-  onSuggestionPress,
-  onClearRecent,
-  showRecentHeader = false,
-}: SearchSuggestionsProps) => {
-  const handleSuggestionPress = useCallback((suggestion: SearchSuggestion) => {
-    onSuggestionPress(suggestion);
-  }, [onSuggestionPress]);
-
-  const handleClearRecent = useCallback(() => {
-    if (onClearRecent) {
-      onClearRecent();
-    }
-  }, [onClearRecent]);
+  onSuggestionSelect,
+  isLoading = false,
+  error,
+  searchQuery,
+}) => {
+  const { colors } = useTheme();
 
   if (isLoading) {
     return (
-      <YStack padding="$3" backgroundColor="$background" borderRadius="$3">
-        <Text fontSize="$3" color="$gray11" textAlign="center">
-          Searching...
+      <YStack padding={16} backgroundColor={colors.surface} style={{ borderRadius: 12 }}>
+        <Text fontSize={getFontSize('$3')} color={colors.onSurfaceVariant} textAlign="center">
+          Searching for locations...
         </Text>
+      </YStack>
+    );
+  }
+
+  if (error) {
+    return (
+      <YStack padding={16} backgroundColor={colors.surface} style={{ borderRadius: 12 }}>
+        <Text fontSize={getFontSize('$3')} color={colors.onSurfaceVariant} textAlign="center">
+          ⚠️ Error searching locations
+        </Text>
+        <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant} textAlign="center">
+          {error}
+        </Text>
+      </YStack>
+    );
+  }
+
+  if (suggestions.length === 0 && searchQuery) {
+    return (
+      <YStack backgroundColor={colors.surface} style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.outline }}>
+        {/* Header */}
+        <XStack justifyContent="space-between" alignItems="center" padding={8} backgroundColor={colors.surfaceContainer}>
+          <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant} fontWeight={getFontWeight('700')}>
+            Search Results
+          </Text>
+          {searchQuery && (
+            <Text fontSize={getFontSize('$2')} color={colors.primary}>
+              "{searchQuery}"
+            </Text>
+          )}
+        </XStack>
+
+        {/* Empty State */}
+        <YStack padding={8} backgroundColor={colors.surfaceContainerLow}>
+          <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant} textAlign="center">
+            No locations found for your search.
+          </Text>
+        </YStack>
       </YStack>
     );
   }
 
   if (suggestions.length === 0) {
-    return (
-      <YStack padding="$3" backgroundColor="$background" borderRadius="$3">
-        <Text fontSize="$3" color="$gray11" textAlign="center">
-          No suggestions found
-        </Text>
-      </YStack>
-    );
+    return null;
   }
 
-  return (
-    <YStack backgroundColor="$background" borderRadius="$3" borderWidth={1} borderColor="$gray6">
-      {showRecentHeader && (
-        <XStack justifyContent="space-between" alignItems="center" padding="$2" backgroundColor="$gray2">
-          <Text fontSize="$2" color="$gray11" fontWeight="bold">
-            Recent Searches
+  const renderSuggestion = ({ item: suggestion, index }: { item: SearchSuggestion; index: number }) => (
+    <Pressable
+      onPress={() => onSuggestionSelect(suggestion)}
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <XStack alignItems="center" space="md" padding={16}>
+        <Text fontSize={getFontSize('$4')}>
+          📍
+        </Text>
+        <YStack flex={1} space="xs">
+          <Text fontSize={getFontSize('$3')} fontWeight={getFontWeight('600')} numberOfLines={1}>
+            {suggestion.displayName}
           </Text>
-          {onClearRecent && (
-            <TouchableOpacity onPress={handleClearRecent}>
-              <Text fontSize="$2" color="$blue9">
-                Clear
-              </Text>
-            </TouchableOpacity>
-          )}
-        </XStack>
-      )}
-      
-      <ScrollView style={styles.scrollView} nestedScrollEnabled>
-        <YStack>
-          {suggestions.map((suggestion, index) => (
-            <SuggestionItem
-              key={suggestion.id}
-              suggestion={suggestion}
-              onPress={handleSuggestionPress}
-              showSeparator={index < suggestions.length - 1}
-            />
-          ))}
-          
-          {hasMore && (
-            <YStack padding="$2" backgroundColor="$gray1">
-              <Text fontSize="$2" color="$gray11" textAlign="center">
-                More results available...
-              </Text>
-            </YStack>
+          <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant} numberOfLines={1}>
+            {suggestion.address}
+          </Text>
+          {suggestion.category && (
+            <Text fontSize={getFontSize('$2')} color={colors.onSurface} numberOfLines={2}>
+              {suggestion.category}
+            </Text>
           )}
         </YStack>
-      </ScrollView>
-    </YStack>
+        <Text fontSize={getFontSize('$1')} color={colors.onSurface}>
+          {/* Distance indicator could go here */}
+        </Text>
+      </XStack>
+      {index < suggestions.length - 1 && (
+        <Separator style={{ borderColor: colors.outline }} />
+      )}
+    </Pressable>
   );
-});
-
-// Memoized suggestion item component
-const SuggestionItem = React.memo(({
-  suggestion,
-  onPress,
-  showSeparator,
-}: {
-  suggestion: SearchSuggestion;
-  onPress: (suggestion: SearchSuggestion) => void;
-  showSeparator: boolean;
-}) => {
-  const handlePress = useCallback(() => {
-    onPress(suggestion);
-  }, [onPress, suggestion]);
 
   return (
-    <React.Fragment>
-      <TouchableOpacity
-        onPress={handlePress}
-        style={styles.suggestionItem}
-      >
-        <XStack alignItems="center" space="$3" padding="$3">
-          <Text fontSize="$4">
-            {GeocodingService.getCategoryIcon(suggestion.category)}
+    <YStack backgroundColor={colors.surface} style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.outline }}>
+      {/* Header */}
+      <XStack justifyContent="space-between" alignItems="center" padding={8} backgroundColor={colors.surfaceContainer}>
+        <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant} fontWeight={getFontWeight('700')}>
+          Suggested Locations ({suggestions.length})
+        </Text>
+        {searchQuery && (
+          <Text fontSize={getFontSize('$2')} color={colors.primary}>
+            "{searchQuery}"
           </Text>
-          <YStack flex={1} space="$1">
-            <Text fontSize="$3" fontWeight="600" numberOfLines={1}>
-              {suggestion.displayName}
-            </Text>
-            <Text fontSize="$2" color="$gray11" numberOfLines={1}>
-              {GeocodingService.getCategoryLabel(suggestion.category)}
-            </Text>
-            {suggestion.address !== suggestion.displayName && (
-              <Text fontSize="$2" color="$gray10" numberOfLines={2}>
-                {suggestion.address}
-              </Text>
-            )}
-          </YStack>
-          <Text fontSize="$1" color="$gray9">
-            →
-          </Text>
-        </XStack>
-      </TouchableOpacity>
-      {showSeparator && (
-        <Separator borderColor="$gray4" />
-      )}
-    </React.Fragment>
+        )}
+      </XStack>
+
+      {/* Suggestions List */}
+      <FlatList
+        data={suggestions}
+        renderItem={renderSuggestion}
+        keyExtractor={(item, index) => `${item.displayName}-${index}`}
+        scrollEnabled={false}
+        style={{ maxHeight: 300 }}
+      />
+    </YStack>
   );
-});
-
-SearchSuggestions.displayName = 'SearchSuggestions';
-SuggestionItem.displayName = 'SuggestionItem';
-
-export { SearchSuggestions };
-
-const styles = StyleSheet.create({
-  scrollView: {
-    maxHeight: 300,
-  },
-  suggestionItem: {
-    backgroundColor: 'transparent',
-  },
-}); 
+}; 

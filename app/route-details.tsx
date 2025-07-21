@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, ScrollView, Alert } from 'react-native';
-import { YStack, XStack, Button, Text, Card, Separator } from 'tamagui';
+import { YStack, XStack, Button, Text, Card, Separator } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,7 +52,7 @@ export default function RouteDetailsScreen() {
 
   const getVehicleIcon = (vehicleType: VehicleType) => {
     const iconMap = {
-      car: '🚗',
+      driving: '🚗',
       bicycle: '🚴',
       walking: '🚶',
     };
@@ -158,7 +158,7 @@ export default function RouteDetailsScreen() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: 'Loading...' }} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text fontSize="$4">Loading route details...</Text>
+          <Text fontSize={16}>Loading route details...</Text>
         </YStack>
       </SafeAreaView>
     );
@@ -169,7 +169,7 @@ export default function RouteDetailsScreen() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ title: 'Error' }} />
         <YStack flex={1} justifyContent="center" alignItems="center">
-          <Text fontSize="$4">Route not found</Text>
+          <Text fontSize={16}>Route not found</Text>
         </YStack>
       </SafeAreaView>
     );
@@ -180,9 +180,9 @@ export default function RouteDetailsScreen() {
       <Stack.Screen options={{ 
         title: route.name,
         headerRight: () => (
-          <XStack space="$2">
+          <XStack space={"sm"}>
             <Button
-              size="$3"
+              size={"large"}
               backgroundColor={route.isFavorite ? "$yellow7" : "$gray7"}
               onPress={toggleFavorite}
               circular
@@ -194,48 +194,48 @@ export default function RouteDetailsScreen() {
       }} />
       
       <ScrollView style={styles.scrollView}>
-        <YStack padding="$4" space="$4">
+        <YStack padding={24} space={"lg"}>
           {/* Route Header */}
-          <Card padding="$4" backgroundColor="$blue2">
-            <YStack space="$3">
+          <Card padding={24} backgroundColor="$blue2">
+            <YStack space={"md"}>
               <XStack justifyContent="space-between" alignItems="center">
-                <Text fontSize="$6" fontWeight="bold" color="$blue11">
+                <Text fontSize={24} fontWeight={"700"} color="$blue11">
                   {getVehicleIcon(route.vehicleType)} {route.name}
                 </Text>
                 {route.isFavorite && (
-                  <Text fontSize="$5">⭐</Text>
+                  <Text fontSize={20}>⭐</Text>
                 )}
               </XStack>
               
               <XStack justifyContent="space-between">
                 <YStack alignItems="center">
-                  <Text fontSize="$2" color="$blue10">Distance</Text>
-                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                  <Text fontSize={12} color="$blue10">Distance</Text>
+                  <Text fontSize={16} fontWeight={"700"} color="$blue11">
                     {formatDistance(route.totalDistance)}
                   </Text>
                 </YStack>
                 <YStack alignItems="center">
-                  <Text fontSize="$2" color="$blue10">Duration</Text>
-                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                  <Text fontSize={12} color="$blue10">Duration</Text>
+                  <Text fontSize={16} fontWeight={"700"} color="$blue11">
                     {formatDuration(route.totalDuration)}
                   </Text>
                 </YStack>
                 <YStack alignItems="center">
-                  <Text fontSize="$2" color="$blue10">Vehicle</Text>
-                  <Text fontSize="$4" fontWeight="bold" color="$blue11">
+                  <Text fontSize={12} color="$blue10">Vehicle</Text>
+                  <Text fontSize={16} fontWeight={"700"} color="$blue11">
                     {route.vehicleType}
                   </Text>
                 </YStack>
               </XStack>
               
-              <Text fontSize="$3" color="$blue10" textAlign="center">
+              <Text fontSize={14} color="$blue10" textAlign="center">
                 Created on {formatDate(route.createdAt)}
               </Text>
             </YStack>
           </Card>
 
           {/* Action Buttons */}
-          <XStack space="$2" justifyContent="center">
+          <XStack space={"sm"} justifyContent="center">
             <Button
               onPress={shareRoute}
               backgroundColor="$green7"
@@ -256,30 +256,30 @@ export default function RouteDetailsScreen() {
           </XStack>
 
           {/* Export Info */}
-          <Card padding="$3" backgroundColor="$gray1">
-            <YStack space="$2">
-              <Text fontSize="$4" fontWeight="bold">
+          <Card padding={16} backgroundColor="$gray1">
+            <YStack space={"sm"}>
+              <Text fontSize={16} fontWeight={"700"}>
                 📁 Export Options
               </Text>
-              <Text fontSize="$3" color="$gray11">
+              <Text fontSize={14} color="$gray11">
                 • GPX: For GPS devices and navigation apps
               </Text>
-              <Text fontSize="$3" color="$gray11">
+              <Text fontSize={14} color="$gray11">
                 • KML: For Google Earth and Google Maps
               </Text>
-              <Text fontSize="$2" color="$gray10">
+              <Text fontSize={12} color="$gray10">
                 Exported files include route path, waypoints, and weather data
               </Text>
             </YStack>
           </Card>
 
           {/* Tab Navigation */}
-          <XStack backgroundColor="$gray2" borderRadius="$3" padding="$1">
+          <XStack backgroundColor="$gray2" borderRadius={16} padding={4}>
             {(['overview', 'directions', 'weather'] as const).map((tab) => (
               <Button
                 key={tab}
                 flex={1}
-                size="$3"
+                size={"large"}
                 backgroundColor={activeTab === tab ? '$blue7' : 'transparent'}
                 color={activeTab === tab ? 'white' : '$gray11'}
                 onPress={() => setActiveTab(tab)}
@@ -293,42 +293,42 @@ export default function RouteDetailsScreen() {
 
           {/* Tab Content */}
           {activeTab === 'overview' && (
-            <YStack space="$3">
+            <YStack space={"md"}>
               {/* Route Points */}
-              <Card padding="$4" backgroundColor="$background">
-                <YStack space="$3">
-                  <Text fontSize="$5" fontWeight="bold">
+              <Card padding={24} backgroundColor="$background">
+                <YStack space={"md"}>
+                  <Text fontSize={20} fontWeight={"700"}>
                     📍 Route Points
                   </Text>
                   
-                  <YStack space="$2">
-                    <XStack alignItems="center" space="$3">
-                      <Text fontSize="$4">🟢</Text>
+                  <YStack space={"sm"}>
+                    <XStack alignItems="center" space={"md"}>
+                      <Text fontSize={16}>🟢</Text>
                       <YStack flex={1}>
-                        <Text fontSize="$3" fontWeight="bold">Start</Text>
-                        <Text fontSize="$2" color="$gray11">
+                        <Text fontSize={14} fontWeight={"700"}>Start</Text>
+                        <Text fontSize={12} color="$gray11">
                           {route.startPoint.address || `${route.startPoint.latitude.toFixed(4)}, ${route.startPoint.longitude.toFixed(4)}`}
                         </Text>
                       </YStack>
                     </XStack>
 
                     {route.intermediateWaypoints?.map((waypoint, index) => (
-                      <XStack key={waypoint.id} alignItems="center" space="$3">
-                        <Text fontSize="$4">🔵</Text>
+                      <XStack key={waypoint.id} alignItems="center" space={"md"}>
+                        <Text fontSize={16}>🔵</Text>
                         <YStack flex={1}>
-                          <Text fontSize="$3" fontWeight="bold">Stop {waypoint.order}</Text>
-                          <Text fontSize="$2" color="$gray11">
+                          <Text fontSize={14} fontWeight={"700"}>Stop {waypoint.order}</Text>
+                          <Text fontSize={12} color="$gray11">
                             {waypoint.location.address || `${waypoint.location.latitude.toFixed(4)}, ${waypoint.location.longitude.toFixed(4)}`}
                           </Text>
                         </YStack>
                       </XStack>
                     )) || null}
 
-                    <XStack alignItems="center" space="$3">
-                      <Text fontSize="$4">🔴</Text>
+                    <XStack alignItems="center" space={"md"}>
+                      <Text fontSize={16}>🔴</Text>
                       <YStack flex={1}>
-                        <Text fontSize="$3" fontWeight="bold">Destination</Text>
-                        <Text fontSize="$2" color="$gray11">
+                        <Text fontSize={14} fontWeight={"700"}>Destination</Text>
+                        <Text fontSize={12} color="$gray11">
                           {route.endPoint.address || `${route.endPoint.latitude.toFixed(4)}, ${route.endPoint.longitude.toFixed(4)}`}
                         </Text>
                       </YStack>
@@ -338,28 +338,28 @@ export default function RouteDetailsScreen() {
               </Card>
 
               {/* Route Statistics */}
-              <Card padding="$4" backgroundColor="$background">
-                <YStack space="$3">
-                  <Text fontSize="$5" fontWeight="bold">
+              <Card padding={24} backgroundColor="$background">
+                <YStack space={"md"}>
+                  <Text fontSize={20} fontWeight={"700"}>
                     📊 Statistics
                   </Text>
                   
                   <XStack justifyContent="space-between">
                     <YStack alignItems="center">
-                      <Text fontSize="$2" color="$gray11">Total Waypoints</Text>
-                      <Text fontSize="$4" fontWeight="bold">
+                      <Text fontSize={12} color="$gray11">Total Waypoints</Text>
+                      <Text fontSize={16} fontWeight={"700"}>
                         {(route.intermediateWaypoints?.length || 0) + 2}
                       </Text>
                     </YStack>
                     <YStack alignItems="center">
-                      <Text fontSize="$2" color="$gray11">Weather Points</Text>
-                      <Text fontSize="$4" fontWeight="bold">
+                      <Text fontSize={12} color="$gray11">Weather Points</Text>
+                      <Text fontSize={16} fontWeight={"700"}>
                         {route.weatherPoints?.length || 0}
                       </Text>
                     </YStack>
                     <YStack alignItems="center">
-                      <Text fontSize="$2" color="$gray11">Route Points</Text>
-                      <Text fontSize="$4" fontWeight="bold">
+                      <Text fontSize={12} color="$gray11">Route Points</Text>
+                      <Text fontSize={16} fontWeight={"700"}>
                         {route.waypoints?.length || 0}
                       </Text>
                     </YStack>
@@ -371,7 +371,7 @@ export default function RouteDetailsScreen() {
 
           {activeTab === 'directions' && route.waypoints && (
             <RouteDirections 
-              waypoints={route.waypoints.map(wp => ({
+              routePoints={route.waypoints.map(wp => ({
                 location: wp.location,
                 instructions: 'Continue on route',
                 distance: 0,

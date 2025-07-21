@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Alert } from 'react-native';
-import { YStack, XStack, Text, Button, ScrollView, Card } from 'tamagui';
+import { YStack, XStack, Text, Button, ScrollView, Card } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -106,14 +106,14 @@ export default function SavedRoutesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <YStack flex={1} padding="$3" space="$3">
+      <YStack flex={1} padding={16} space={"md"}>
         {/* Header */}
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$6" fontWeight="bold">
+          <Text fontSize={24} fontWeight={"700"}>
             Saved Routes
           </Text>
           <Button
-            size="$3"
+            size={"large"}
             circular
             variant="outlined"
             onPress={() => router.push('/settings' as any)}
@@ -125,14 +125,14 @@ export default function SavedRoutesScreen() {
         {/* Content */}
         {isLoading ? (
           <YStack flex={1} justifyContent="center" alignItems="center">
-            <Text fontSize="$4">Loading saved routes...</Text>
+            <Text fontSize={16}>Loading saved routes...</Text>
           </YStack>
         ) : savedRoutes.length === 0 ? (
-          <YStack flex={1} justifyContent="center" alignItems="center" space="$3">
-            <Text fontSize="$5" textAlign="center">
+          <YStack flex={1} justifyContent="center" alignItems="center" space={"md"}>
+            <Text fontSize={20} textAlign="center">
               🗺️ No Saved Routes
             </Text>
-            <Text fontSize="$3" color="$gray11" textAlign="center">
+            <Text fontSize={14} color="$gray11" textAlign="center">
               Save routes from the route planner to see them here
             </Text>
                          <Button
@@ -144,53 +144,53 @@ export default function SavedRoutesScreen() {
           </YStack>
         ) : (
           <ScrollView showsVerticalScrollIndicator={false}>
-            <YStack space="$3">
+            <YStack space={"md"}>
               {savedRoutes.map((route) => (
-                <Card key={route.id} padding="$3" backgroundColor="$gray2">
-                  <YStack space="$2">
+                <Card key={route.id} padding={16} backgroundColor="$gray2">
+                  <YStack space={"sm"}>
                     {/* Route Header */}
                     <XStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize="$4" fontWeight="bold" flex={1}>
+                      <Text fontSize={16} fontWeight={"700"} flex={1}>
                         {route.name}
                       </Text>
                       {route.isFavorite && (
-                        <Text fontSize="$3">⭐</Text>
+                        <Text fontSize={14}>⭐</Text>
                       )}
                     </XStack>
 
                     {/* Route Info */}
                     <XStack justifyContent="space-between">
-                      <Text fontSize="$3" color="$gray11">
+                      <Text fontSize={14} color="$gray11">
                         📏 {formatDistance(route.totalDistance)}
                       </Text>
-                      <Text fontSize="$3" color="$gray11">
+                      <Text fontSize={14} color="$gray11">
                         ⏱️ {formatDuration(route.totalDuration)}
                       </Text>
-                      <Text fontSize="$3" color="$gray11">
+                      <Text fontSize={14} color="$gray11">
                         🚗 {route.vehicleType}
                       </Text>
                     </XStack>
 
                     {/* Route Details */}
-                    <YStack space="$1">
-                      <Text fontSize="$2" color="$gray10">
+                    <YStack space={"xs"}>
+                      <Text fontSize={12} color="$gray10">
                         📍 From: {route.startPoint.address || `${route.startPoint.latitude.toFixed(4)}, ${route.startPoint.longitude.toFixed(4)}`}
                       </Text>
-                      <Text fontSize="$2" color="$gray10">
+                      <Text fontSize={12} color="$gray10">
                         🎯 To: {route.endPoint.address || `${route.endPoint.latitude.toFixed(4)}, ${route.endPoint.longitude.toFixed(4)}`}
                       </Text>
                       {route.intermediateWaypoints && route.intermediateWaypoints.length > 0 && (
-                        <Text fontSize="$2" color="$gray10">
+                        <Text fontSize={12} color="$gray10">
                           🔢 Waypoints: {route.intermediateWaypoints.length}
                         </Text>
                       )}
-                      <Text fontSize="$2" color="$gray9">
+                      <Text fontSize={12} color="$gray9">
                         📅 Saved: {formatDate(route.createdAt)}
                       </Text>
                     </YStack>
 
                     {/* Action Buttons */}
-                    <XStack space="$2" marginTop="$2">
+                    <XStack space={"sm"} marginTop={"sm"}>
                       <Button
                         flex={1}
                         backgroundColor="$blue7"
@@ -221,8 +221,8 @@ export default function SavedRoutesScreen() {
 
         {/* Summary Footer */}
         {savedRoutes.length > 0 && (
-          <XStack justifyContent="center" padding="$2" backgroundColor="$gray1" borderRadius="$3">
-            <Text fontSize="$3" color="$gray11">
+          <XStack justifyContent="center" padding={8} backgroundColor="$gray1" borderRadius={16}>
+            <Text fontSize={14} color="$gray11">
               {savedRoutes.length} route{savedRoutes.length > 1 ? 's' : ''} saved
             </Text>
           </XStack>

@@ -1,110 +1,154 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { YStack, XStack, Text, Card, Separator } from 'tamagui';
-import { RoutePoint } from '@/types';
+import { Pressable } from 'react-native';
+import { Card, Text, YStack, XStack } from './ui';
+import { RoutePoint } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { getFontSize, getSpacingKey, getFontWeight } from '../constants/UISizes';
 
 interface RouteDirectionsProps {
-  waypoints: RoutePoint[];
+  routePoints: RoutePoint[];
+  onWaypointSelect?: (index: number) => void;
+  selectedIndex?: number;
+  showCoordinates?: boolean;
 }
 
-export function RouteDirections({ waypoints }: RouteDirectionsProps) {
-  const formatDistance = (meters: number) => {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    }
-    return `${Math.round(meters / 1000 * 10) / 10}km`;
-  };
+const formatDistance = (meters: number): string => {
+  if (meters < 1000) {
+    return `${Math.round(meters)}m`;
+  }
+  return `${(meters / 1000).toFixed(1)}km`;
+};
 
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-      return `${minutes}min`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}min`;
-  };
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+};
 
-  const getDirectionIcon = (instruction: string) => {
-    const lowerInstruction = instruction.toLowerCase();
-    
-    if (lowerInstruction.includes('left')) return '↰';
-    if (lowerInstruction.includes('right')) return '↱';
-    if (lowerInstruction.includes('straight') || lowerInstruction.includes('continue')) return '↑';
-    if (lowerInstruction.includes('start')) return '🏁';
-    if (lowerInstruction.includes('arrive') || lowerInstruction.includes('destination')) return '🎯';
-    if (lowerInstruction.includes('roundabout')) return '⭕';
-    if (lowerInstruction.includes('exit')) return '🛣️';
-    
-    return '➡️';
-  };
+export const RouteDirections: React.FC<RouteDirectionsProps> = ({
+  routePoints,
+  onWaypointSelect,
+  selectedIndex,
+  showCoordinates = false,
+}) => {
+  const { colors } = useTheme();
 
-  if (!waypoints || waypoints.length === 0) {
+  if (routePoints.length === 0) {
     return (
-      <Card padding="$4" backgroundColor="$gray2">
-        <YStack alignItems="center" space="$3">
-          <Text fontSize="$6">🧭</Text>
-          <Text fontSize="$4" fontWeight="bold" textAlign="center">
-            No Directions Available
+      <Card padding={16} backgroundColor={colors.surface}>
+        <YStack space="md">
+          <Text fontSize={getFontSize('$4')} fontWeight={getFontWeight('600')} color={colors.primary}>
+            No Route Available
           </Text>
-          <Text fontSize="$3" color="$gray11" textAlign="center">
-            Turn-by-turn directions are not available for this route.
+          <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+            Please calculate a route to see turn-by-turn directions.
           </Text>
         </YStack>
       </Card>
     );
   }
 
+  // Filter to show only waypoints with instructions or significant points
+  const significantWaypoints = routePoints.filter((point, index) => 
+    point.instructions || 
+    index === 0 || 
+    index === routePoints.length - 1 ||
+    (point.distance !== undefined && point.distance > 500) // Show waypoints every 500m+
+  );
+
   return (
-    <YStack space="$3">
-      <Text fontSize="$5" fontWeight="bold">
-        Turn-by-Turn Directions
+    <YStack space="md">
+      {/* Header */}
+      <Text fontSize={getFontSize('$5')} fontWeight={getFontWeight('600')} color={colors.primary}>
+        Route Directions ({significantWaypoints.length} steps)
       </Text>
-      
-      {waypoints.map((waypoint, index) => (
-        <React.Fragment key={index}>
-          <Card padding="$3" backgroundColor="$background">
-            <XStack space="$3" alignItems="flex-start">
-              {/* Step Number & Icon */}
-              <YStack alignItems="center" minWidth={40}>
-                <YStack
-                  width={32}
-                  height={32}
-                  backgroundColor="$blue7"
-                  borderRadius={16}
-                  alignItems="center"
-                  justifyContent="center"
-                  marginBottom="$2"
-                >
-                  <Text fontSize="$3" color="white" fontWeight="bold">
-                    {index + 1}
-                  </Text>
-                </YStack>
-                <Text fontSize="$4">
-                  {getDirectionIcon(waypoint.instructions || '')}
+
+      {/* Summary Card */}
+      <Card padding={16} backgroundColor={colors.primaryContainer}>
+        <YStack space="sm">
+          <Text fontSize={getFontSize('$4')} fontWeight={getFontWeight('700')}>
+            Route Summary
+          </Text>
+          
+          <XStack space="lg">
+            <XStack alignItems="center" space="xs">
+              <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>📏</Text>
+              <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+                {formatDistance(routePoints[routePoints.length - 1]?.distance || 0)}
+              </Text>
+            </XStack>
+            
+            <XStack alignItems="center" space="xs">
+              <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>⏱️</Text>
+              <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+                {formatDuration(routePoints[routePoints.length - 1]?.duration || 0)}
+              </Text>
+            </XStack>
+          </XStack>
+
+          {/* Coordinates for reference */}
+          {showCoordinates && (
+            <Text fontSize={getFontSize('$1')} color={colors.onSurface}>
+              Start: {routePoints[0]?.location.latitude.toFixed(6)}, {routePoints[0]?.location.longitude.toFixed(6)}
+            </Text>
+          )}
+        </YStack>
+      </Card>
+
+      {/* Direction Steps */}
+      {significantWaypoints.map((waypoint, index) => (
+        <Card 
+          key={index} 
+          padding={16} 
+          backgroundColor={selectedIndex === index ? colors.primaryContainer : colors.surface}
+          style={{
+            borderWidth: selectedIndex === index ? 2 : 1,
+            borderColor: selectedIndex === index ? colors.primary : colors.outline,
+          }}
+        >
+          <Pressable
+            onPress={() => onWaypointSelect?.(index)}
+            style={{ flex: 1 }}
+          >
+            <XStack space="md" alignItems="flex-start">
+              {/* Step Number */}
+              <YStack
+                width={32}
+                height={32}
+                backgroundColor={colors.primary}
+                borderRadius={16}
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Text fontSize={getFontSize('$2')} color="white" fontWeight={getFontWeight('700')}>
+                  {index + 1}
                 </Text>
               </YStack>
 
-              {/* Direction Details */}
-              <YStack flex={1} space="$2">
-                <Text fontSize="$4" fontWeight="600">
+              {/* Step Details */}
+              <YStack flex={1} space="xs">
+                <Text fontSize={getFontSize('$4')} fontWeight={getFontWeight('600')}>
                   {waypoint.instructions || `Step ${index + 1}`}
                 </Text>
                 
-                <XStack space="$4">
+                <XStack space="lg">
                   {waypoint.distance !== undefined && waypoint.distance > 0 && (
-                    <XStack alignItems="center" space="$1">
-                      <Text fontSize="$2" color="$gray11">📏</Text>
-                      <Text fontSize="$2" color="$gray11">
+                    <XStack alignItems="center" space="xs">
+                      <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>📏</Text>
+                      <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
                         {formatDistance(waypoint.distance)}
                       </Text>
                     </XStack>
                   )}
                   
                   {waypoint.duration !== undefined && waypoint.duration > 0 && (
-                    <XStack alignItems="center" space="$1">
-                      <Text fontSize="$2" color="$gray11">⏱️</Text>
-                      <Text fontSize="$2" color="$gray11">
+                    <XStack alignItems="center" space="xs">
+                      <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>⏱️</Text>
+                      <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
                         {formatDuration(waypoint.duration)}
                       </Text>
                     </XStack>
@@ -112,43 +156,16 @@ export function RouteDirections({ waypoints }: RouteDirectionsProps) {
                 </XStack>
 
                 {/* Coordinates for reference */}
-                <Text fontSize="$1" color="$gray9">
-                  {waypoint.location.latitude.toFixed(6)}, {waypoint.location.longitude.toFixed(6)}
-                </Text>
+                {showCoordinates && (
+                  <Text fontSize={getFontSize('$1')} color={colors.onSurface}>
+                    {waypoint.location.latitude.toFixed(6)}, {waypoint.location.longitude.toFixed(6)}
+                  </Text>
+                )}
               </YStack>
             </XStack>
-          </Card>
-          
-          {/* Connecting Line */}
-          {index < waypoints.length - 1 && (
-            <YStack alignItems="flex-start" paddingLeft={20}>
-              <YStack
-                width={2}
-                height={20}
-                backgroundColor="$gray7"
-                marginLeft={15}
-              />
-            </YStack>
-          )}
-        </React.Fragment>
+          </Pressable>
+        </Card>
       ))}
-
-      {/* Summary */}
-      <Card padding="$3" backgroundColor="$blue2">
-        <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$4" fontWeight="bold">
-            Total Journey
-          </Text>
-          <XStack space="$4">
-            <Text fontSize="$3">
-              📏 {formatDistance(waypoints.reduce((sum, wp) => sum + (wp.distance || 0), 0))}
-            </Text>
-            <Text fontSize="$3">
-              ⏱️ {formatDuration(waypoints.reduce((sum, wp) => sum + (wp.duration || 0), 0))}
-            </Text>
-          </XStack>
-        </XStack>
-      </Card>
     </YStack>
   );
-} 
+}; 

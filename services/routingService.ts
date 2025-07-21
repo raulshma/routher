@@ -90,7 +90,7 @@ export class RoutingService {
 
   static getProfileForVehicle(vehicleType: VehicleType): string {
     switch (vehicleType) {
-      case 'car':
+      case 'driving':
         return 'driving';
       case 'bicycle':
         return 'cycling';
@@ -391,7 +391,7 @@ export class RoutingService {
   ): number {
     const distance = this.calculateDistance(point1, point2);
     const speedMap = {
-      car: 50, // km/h
+      driving: 50, // km/h
       bicycle: 15, // km/h
       walking: 5, // km/h
     };

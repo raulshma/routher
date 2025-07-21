@@ -46,7 +46,15 @@ export interface Route {
   createdAt: Date;
 }
 
-export type VehicleType = 'car' | 'bicycle' | 'walking';
+export type VehicleType = 'driving' | 'bicycle' | 'walking';
+
+export interface RouteOptions {
+  vehicle: VehicleType;
+  avoidHighways: boolean;
+  avoidTolls: boolean;
+  avoidFerries: boolean;
+  routeType: 'fastest' | 'shortest' | 'balanced';
+}
 
 export interface SavedRoute extends Route {
   isFavorite?: boolean;

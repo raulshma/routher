@@ -1,243 +1,233 @@
-import React, { useMemo, useCallback } from 'react';
-import { YStack, XStack, Text, Button, Card, ScrollView } from 'tamagui';
-import { RouteAlternative } from '@/services/routingService';
+import React, { useState } from 'react';
+import { Modal, Pressable } from 'react-native';
+import { Card, Text, YStack, XStack, Button, ScrollView } from './ui';
+import { VehicleType, RouteOptions as RouteOptionsType } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { getFontSize, getSpacingKey, getFontWeight, getButtonSize } from '../constants/UISizes';
 
 interface RouteOptionsProps {
-  alternatives: RouteAlternative[];
-  selectedRouteId?: string;
-  onRouteSelect: (routeId: string, alternative: RouteAlternative) => void;
-  onClose?: () => void;
+  isVisible: boolean;
+  onClose: () => void;
+  onOptionsChange: (options: RouteOptionsType) => void;
+  currentOptions: RouteOptionsType;
 }
 
-const RouteOptions = React.memo(({
-  alternatives,
-  selectedRouteId,
-  onRouteSelect,
+const VEHICLE_OPTIONS: Array<{ type: VehicleType; label: string; icon: string; description: string }> = [
+  { type: 'driving', label: 'Car', icon: '🚗', description: 'Fastest route for cars' },
+  { type: 'walking', label: 'Walking', icon: '🚶', description: 'Pedestrian paths and sidewalks' },
+  { type: 'bicycle', label: 'Bicycle', icon: '🚴', description: 'Bike lanes and paths' },
+];
+
+const ROUTE_TYPES = [
+  { key: 'fastest', label: 'Fastest', description: 'Minimum travel time' },
+  { key: 'shortest', label: 'Shortest', description: 'Minimum distance' },
+  { key: 'balanced', label: 'Balanced', description: 'Balance of time and distance' },
+];
+
+export const RouteOptions: React.FC<RouteOptionsProps> = ({
+  isVisible,
   onClose,
-}: RouteOptionsProps) => {
-  const formatDistance = useCallback((meters: number) => {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    }
-    return `${Math.round(meters / 1000 * 10) / 10}km`;
-  }, []);
+  onOptionsChange,
+  currentOptions,
+}) => {
+  const { colors } = useTheme();
+  const [tempOptions, setTempOptions] = useState<RouteOptionsType>(currentOptions);
 
-  const formatDuration = useCallback((seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  }, []);
+  const handleSave = () => {
+    onOptionsChange(tempOptions);
+    onClose();
+  };
 
-  const getRouteIcon = useCallback((description: string) => {
-    if (description.includes('Fastest')) return '🚀';
-    if (description.includes('Shortest')) return '📏';
-    if (description.includes('Alternative')) return '🔄';
-    return '🛣️';
-  }, []);
-
-  const getRouteColor = useCallback((routeId: string, isSelected: boolean) => {
-    if (isSelected) return '$blue8';
-    if (routeId === 'route-0') return '$blue6';
-    if (routeId === 'route-1') return '$green6';
-    if (routeId === 'route-2') return '$orange6';
-    return '$gray6';
-  }, []);
-
-  // Memoized route comparison stats
-  const routeStats = useMemo(() => {
-    if (alternatives.length === 0) return null;
-    
-    return {
-      fastestDuration: Math.min(...alternatives.map(a => a.totalDuration)),
-      shortestDistance: Math.min(...alternatives.map(a => a.totalDistance)),
-      count: alternatives.length,
+  const handleReset = () => {
+    const defaultOptions: RouteOptionsType = {
+      vehicle: 'driving',
+      avoidHighways: false,
+      avoidTolls: false,
+      avoidFerries: false,
+      routeType: 'fastest',
     };
-  }, [alternatives]);
-
-  // Memoized route cards data
-  const routeCards = useMemo(() => {
-    return alternatives.map((alternative, index) => {
-      const isSelected = selectedRouteId === alternative.id;
-      const isRecommended = index === 0;
-      
-      return {
-        ...alternative,
-        isSelected,
-        isRecommended,
-        formattedDistance: formatDistance(alternative.totalDistance),
-        formattedDuration: formatDuration(alternative.totalDuration),
-        icon: getRouteIcon(alternative.description),
-        borderColor: getRouteColor(alternative.id, isSelected),
-        isFaster: alternative.totalDuration < alternatives[0].totalDuration,
-        isShorter: alternative.totalDistance < alternatives[0].totalDistance,
-      };
-    });
-  }, [alternatives, selectedRouteId, formatDistance, formatDuration, getRouteIcon, getRouteColor]);
-
-  const handleRouteSelect = useCallback((routeId: string, alternative: RouteAlternative) => {
-    onRouteSelect(routeId, alternative);
-  }, [onRouteSelect]);
+    setTempOptions(defaultOptions);
+  };
 
   return (
-    <YStack space="$3" padding="$3" backgroundColor="$background" borderRadius="$3">
-      {/* Header */}
-      <XStack justifyContent="space-between" alignItems="center">
-        <Text fontSize="$5" fontWeight="bold">
-          Route Options ({alternatives.length})
-        </Text>
-        {onClose && (
-          <Button size="$2" circular onPress={onClose}>
-            ✕
-          </Button>
-        )}
-      </XStack>
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <YStack 
+        flex={1} 
+        backgroundColor="rgba(0,0,0,0.5)" 
+        justifyContent="flex-end"
+      >
+        <Card
+          backgroundColor={colors.surface}
+          style={{
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            maxHeight: '90%',
+          }}
+        >
+          <YStack space="md" padding={16} style={{ borderRadius: 12 }}>
+            {/* Header */}
+            <XStack justifyContent="space-between" alignItems="center">
+              <Text fontSize={getFontSize('$5')} fontWeight={getFontWeight('700')}>
+                Route Options
+              </Text>
+              
+              <Button size={getButtonSize('$2')} variant="outlined" onPress={onClose}>
+                ✕
+              </Button>
+            </XStack>
 
-      {/* Route Cards */}
-      <ScrollView maxHeight={300}>
-        <YStack space="$2">
-          {routeCards.map((route) => (
-            <Card
-              key={route.id}
-              padding="$3"
-              backgroundColor={route.isSelected ? '$blue2' : '$gray1'}
-              borderColor={route.borderColor}
-              borderWidth={route.isSelected ? 2 : 1}
-              pressStyle={{ scale: 0.98 }}
-              onPress={() => handleRouteSelect(route.id, route)}
-            >
-              <XStack justifyContent="space-between" alignItems="center">
-                <YStack flex={1} space="$1">
-                  <XStack alignItems="center" space="$2">
-                    <Text fontSize="$1">
-                      {route.icon}
+            {/* Content */}
+            <ScrollView style={{ maxHeight: 300 }}>
+              <YStack space="sm">
+                {/* Vehicle Selection */}
+                <Card 
+                  padding={16}
+                  backgroundColor={colors.surfaceContainer}
+                >
+                  <YStack space="sm">
+                    <YStack flex={1} space="xs">
+                      <XStack alignItems="center" space="sm">
+                        <Text fontSize={getFontSize('$1')}>
+                          🚗
+                        </Text>
+                        <Text fontSize={getFontSize('$4')} fontWeight={getFontWeight('700')}>
+                          Vehicle Type
+                        </Text>
+                      </XStack>
+                      
+                      {tempOptions.vehicle && (
+                        <Text 
+                          fontSize={getFontSize('$2')}
+                          color={colors.onSurfaceVariant}
+                        >
+                          Selected: {VEHICLE_OPTIONS.find(v => v.type === tempOptions.vehicle)?.label}
+                        </Text>
+                      )}
+                    </YStack>
+
+                    {/* Vehicle Options */}
+                    <XStack space="lg">
+                      {VEHICLE_OPTIONS.map((vehicle) => (
+                        <Pressable
+                          key={vehicle.type}
+                          onPress={() => setTempOptions((prev: RouteOptionsType) => ({ ...prev, vehicle: vehicle.type }))}
+                          style={{ flex: 1 }}
+                        >
+                          <XStack alignItems="center" space="xs">
+                            <Text fontSize={getFontSize('$2')}>⏱️</Text>
+                            <Text fontSize={getFontSize('$3')} color={colors.onSurfaceVariant}>
+                              {vehicle.description}
+                            </Text>
+                          </XStack>
+                          
+                          <XStack alignItems="center" space="xs">
+                            <Text fontSize={getFontSize('$2')}>📏</Text>
+                            <Text fontSize={getFontSize('$3')} color={colors.onSurfaceVariant}>
+                              {vehicle.label}
+                            </Text>
+                          </XStack>
+                        </Pressable>
+                      ))}
+                    </XStack>
+
+                    {/* Avoidance Options */}
+                    <XStack space="sm" style={{ flexWrap: 'wrap' }}>
+                      {[
+                        { key: 'avoidHighways', label: '🛣️ Avoid Highways' },
+                        { key: 'avoidTolls', label: '💰 Avoid Tolls' },
+                        { key: 'avoidFerries', label: '⛴️ Avoid Ferries' },
+                      ].map((option) => (
+                        <Pressable
+                          key={option.key}
+                                                     onPress={() => setTempOptions((prev: RouteOptionsType) => ({
+                             ...prev,
+                             [option.key]: !prev[option.key as keyof RouteOptionsType]
+                           }))}
+                          style={{
+                            padding: 8,
+                            borderRadius: 8,
+                            backgroundColor: tempOptions[option.key as keyof RouteOptionsType] 
+                              ? colors.primaryContainer 
+                              : colors.surfaceVariant,
+                            marginBottom: 8,
+                            marginRight: 8,
+                          }}
+                        >
+                          <Text 
+                            fontSize={getFontSize('$1')}
+                            color={tempOptions[option.key as keyof RouteOptionsType] 
+                              ? colors.onPrimaryContainer 
+                              : colors.onSurfaceVariant
+                            }
+                          >
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </XStack>
+
+                    {/* Route Type Priority */}
+                    <Text fontSize={getFontSize('$4')} color={colors.primary}>
+                      Route Priority
                     </Text>
-                    <Text fontSize="$4" fontWeight="bold">
-                      {route.description}
-                    </Text>
-                    {route.isRecommended && (
-                      <Text
-                        fontSize="$2"
-                        color="$blue11"
-                        backgroundColor="$blue3"
-                        paddingHorizontal="$2"
-                        paddingVertical="$1"
-                        borderRadius="$2"
-                      >
-                        Recommended
+                    {!tempOptions.routeType && (
+                      <Text fontSize={getFontSize('$4')} color={colors.onSurface}>
+                        No route type selected
                       </Text>
                     )}
+                  </YStack>
+                </Card>
+
+                {/* Route Type Selection */}
+                <YStack space="sm" padding={8} backgroundColor={colors.surfaceContainer} style={{ borderRadius: 8 }}>
+                  <Text fontSize={getFontSize('$3')} fontWeight={getFontWeight('700')} textAlign="center">
+                    Route Optimization
+                  </Text>
+                  
+                  {ROUTE_TYPES.map((type) => (
+                    <XStack key={type.key} justifyContent="space-between" alignItems="center">
+                      <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+                        {type.label}
+                      </Text>
+                      <Text fontSize={getFontSize('$3')} fontWeight={getFontWeight('700')}>
+                        {type.description}
+                      </Text>
+                    </XStack>
+                  ))}
+                  
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+                      Current Selection
+                    </Text>
+                    <Text fontSize={getFontSize('$3')} fontWeight={getFontWeight('700')}>
+                      {ROUTE_TYPES.find(t => t.key === tempOptions.routeType)?.label || 'None'}
+                    </Text>
                   </XStack>
                   
-                  <XStack space="$4">
-                    <XStack alignItems="center" space="$1">
-                      <Text fontSize="$2">⏱️</Text>
-                      <Text fontSize="$3" color="$gray11">
-                        {route.formattedDuration}
-                      </Text>
-                    </XStack>
-                    
-                    <XStack alignItems="center" space="$1">
-                      <Text fontSize="$2">📏</Text>
-                      <Text fontSize="$3" color="$gray11">
-                        {route.formattedDistance}
-                      </Text>
-                    </XStack>
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontSize={getFontSize('$2')} color={colors.onSurfaceVariant}>
+                      Description
+                    </Text>
+                    <Text fontSize={getFontSize('$3')} fontWeight={getFontWeight('700')}>
+                      {ROUTE_TYPES.find(t => t.key === tempOptions.routeType)?.description || 'No description'}
+                    </Text>
                   </XStack>
-
-                  {/* Route comparison badges */}
-                  {(route.isFaster || route.isShorter) && (
-                    <XStack space="$2" flexWrap="wrap">
-                      {route.isFaster && (
-                        <Text
-                          fontSize="$1"
-                          color="$green11"
-                          backgroundColor="$green2"
-                          paddingHorizontal="$1"
-                          borderRadius="$1"
-                        >
-                          Faster
-                        </Text>
-                      )}
-                      {route.isShorter && (
-                        <Text
-                          fontSize="$1"
-                          color="$blue11"
-                          backgroundColor="$blue2"
-                          paddingHorizontal="$1"
-                          borderRadius="$1"
-                        >
-                          Shorter
-                        </Text>
-                      )}
-                    </XStack>
-                  )}
                 </YStack>
+              </YStack>
+            </ScrollView>
 
-                {/* Selection indicator */}
-                <YStack alignItems="center" justifyContent="center">
-                  {route.isSelected ? (
-                    <Text fontSize="$4" color="$blue11">
-                      ✓
-                    </Text>
-                  ) : (
-                    <Text fontSize="$4" color="$gray8">
-                      ○
-                    </Text>
-                  )}
-                </YStack>
-              </XStack>
-            </Card>
-          ))}
-        </YStack>
-      </ScrollView>
-
-      {/* Compare Info */}
-      {routeStats && (
-        <YStack space="$2" padding="$2" backgroundColor="$gray1" borderRadius="$2">
-          <Text fontSize="$3" fontWeight="bold" textAlign="center">
-            Route Comparison
-          </Text>
-          <XStack justifyContent="space-around">
-            <YStack alignItems="center">
-              <Text fontSize="$2" color="$gray11">
-                Fastest
-              </Text>
-              <Text fontSize="$3" fontWeight="bold">
-                {formatDuration(routeStats.fastestDuration)}
-              </Text>
-            </YStack>
-            <YStack alignItems="center">
-              <Text fontSize="$2" color="$gray11">
-                Shortest
-              </Text>
-              <Text fontSize="$3" fontWeight="bold">
-                {formatDistance(routeStats.shortestDistance)}
-              </Text>
-            </YStack>
-            <YStack alignItems="center">
-              <Text fontSize="$2" color="$gray11">
-                Options
-              </Text>
-              <Text fontSize="$3" fontWeight="bold">
-                {routeStats.count}
-              </Text>
-            </YStack>
-          </XStack>
-        </YStack>
-      )}
-
-      {/* Help text */}
-      <Text fontSize="$2" color="$gray10" textAlign="center">
-        Tap a route to view it on the map
-      </Text>
-    </YStack>
+            {/* Footer Actions */}
+            <Text fontSize={getFontSize('$2')} color={colors.onSurface} textAlign="center">
+              Tap Save to apply changes or Reset to restore defaults
+            </Text>
+          </YStack>
+        </Card>
+      </YStack>
+    </Modal>
   );
-});
-
-RouteOptions.displayName = 'RouteOptions';
-
-export { RouteOptions }; 
+}; 

@@ -1,115 +1,126 @@
-import React, { useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { YStack, XStack, Text, Card, Button } from 'tamagui';
-import { WeatherPoint } from '@/types';
+import React, { useMemo } from 'react';
+import { Pressable } from 'react-native';
+import { Card, Text, YStack, XStack } from './ui';
+import { WeatherData, WeatherPoint } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface WeatherSegmentProps {
   weatherPoints: WeatherPoint[];
+  onWeatherPointSelect?: (index: number) => void;
+  selectedIndex?: number;
 }
 
-export function WeatherSegment({ weatherPoints }: WeatherSegmentProps) {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+// Size mappings for consistent styling
+const FONT_SIZES = {
+  xs: 10,
+  sm: 12,
+  md: 14,
+  lg: 16,
+  xl: 22,
+  xxl: 28,
+} as const;
 
-  const formatDistance = (meters: number) => {
-    if (meters < 1000) {
-      return `${Math.round(meters)}m`;
-    }
-    return `${Math.round(meters / 1000 * 10) / 10}km`;
-  };
+const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+} as const;
 
-  const getWeatherIcon = (iconCode: string) => {
-    const iconMap: { [key: string]: string } = {
-      '01d': '☀️', '01n': '🌙',
-      '02d': '⛅', '02n': '⛅',
-      '03d': '☁️', '03n': '☁️',
-      '04d': '☁️', '04n': '☁️',
-      '09d': '🌧️', '09n': '🌧️',
-      '10d': '🌦️', '10n': '🌦️',
-      '11d': '⛈️', '11n': '⛈️',
-      '13d': '❄️', '13n': '❄️',
-      '50d': '🌫️', '50n': '🌫️',
+export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
+  weatherPoints,
+  onWeatherPointSelect,
+  selectedIndex,
+}) => {
+  const { colors } = useTheme();
+
+  const weatherStats = useMemo(() => {
+    if (weatherPoints.length === 0) return null;
+
+    const temperatures = weatherPoints.map(point => point.weather.temperature);
+    const humidities = weatherPoints.map(point => point.weather.humidity);
+    const precipitations = weatherPoints.map(point => point.weather.precipitation);
+
+    return {
+      avgTemp: Math.round(temperatures.reduce((a, b) => a + b, 0) / temperatures.length),
+      avgHumidity: Math.round(humidities.reduce((a, b) => a + b, 0) / humidities.length),
+      maxPrecipitation: Math.max(...precipitations),
+      minTemp: Math.min(...temperatures),
+      maxTemp: Math.max(...temperatures),
     };
-    return iconMap[iconCode] || '🌤️';
+  }, [weatherPoints]);
+
+  const getTemperatureColor = (temp: number): string => {
+    if (temp <= 0) return '#0066CC';
+    if (temp <= 10) return '#3399FF';
+    if (temp <= 20) return '#66B2FF';
+    if (temp <= 30) return '#FFB366';
+    return '#FF6633';
   };
 
-  const getTemperatureColor = (temp: number) => {
-    if (temp <= 0) return '$blue9';
-    if (temp <= 10) return '$blue7';
-    if (temp <= 20) return '$green7';
-    if (temp <= 30) return '$yellow7';
-    return '$red7';
+  const getWeatherIcon = (weather: WeatherData): string => {
+    switch (weather.icon) {
+      case '01d': case '01n': return '☀️';
+      case '02d': case '02n': return '⛅';
+      case '03d': case '03n': case '04d': case '04n': return '☁️';
+      case '09d': case '09n': return '🌧️';
+      case '10d': case '10n': return '🌦️';
+      case '11d': case '11n': return '⛈️';
+      case '13d': case '13n': return '❄️';
+      case '50d': case '50n': return '🌫️';
+      default: return '🌡️';
+    }
   };
 
-  const getWeatherConditionColor = (description: string) => {
-    const lower = description.toLowerCase();
-    if (lower.includes('rain') || lower.includes('storm')) return '$blue9';
-    if (lower.includes('snow')) return '$gray9';
-    if (lower.includes('cloud')) return '$gray7';
-    if (lower.includes('clear') || lower.includes('sun')) return '$yellow7';
-    return '$gray7';
-  };
-
-  if (!weatherPoints || weatherPoints.length === 0) {
+  if (!weatherStats) {
     return (
-      <Card padding="$4" backgroundColor="$gray2">
-        <YStack alignItems="center" space="$3">
-          <Text fontSize="$6">🌤️</Text>
-          <Text fontSize="$4" fontWeight="bold" textAlign="center">
+      <Card padding={SPACING.md} backgroundColor={colors.surface}>
+        <YStack space="md">
+          <Text fontSize={FONT_SIZES.lg} fontWeight="600" color={colors.primary}>
             No Weather Data Available
           </Text>
-          <Text fontSize="$3" color="$gray11" textAlign="center">
-            Weather information is not available for this route.
+          <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
+            Weather information will be displayed once route data is available.
           </Text>
         </YStack>
       </Card>
     );
   }
 
-  // Calculate weather summary
-  const avgTemp = Math.round(
-    weatherPoints.reduce((sum, wp) => sum + wp.weather.temperature, 0) / weatherPoints.length
-  );
-  const avgHumidity = Math.round(
-    weatherPoints.reduce((sum, wp) => sum + wp.weather.humidity, 0) / weatherPoints.length
-  );
-  const maxPrecipitation = Math.max(
-    ...weatherPoints.map(wp => wp.weather.precipitation)
-  );
+  const { avgTemp, avgHumidity, maxPrecipitation } = weatherStats;
 
   return (
-    <YStack space="$3">
-      <Text fontSize="$5" fontWeight="bold">
-        Weather Along Route
-      </Text>
-      
-      {/* Weather Summary */}
-      <Card padding="$3" backgroundColor="$blue2">
-        <YStack space="$3">
-          <Text fontSize="$4" fontWeight="bold">
+    <YStack space="md">
+      {/* Weather Summary Card */}
+      <Card padding={SPACING.md}>
+        <YStack space="md">
+          <Text fontSize={FONT_SIZES.lg} fontWeight="600" color={colors.primary}>
             Weather Summary
           </Text>
           <XStack justifyContent="space-around">
             <YStack alignItems="center">
-              <Text fontSize="$4" fontWeight="bold" color={getTemperatureColor(avgTemp)}>
+              <Text fontSize={FONT_SIZES.lg} fontWeight="700" color={getTemperatureColor(avgTemp)}>
                 {avgTemp}°C
               </Text>
-              <Text fontSize="$2" color="$gray11">
+              <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
                 Avg Temp
               </Text>
             </YStack>
             <YStack alignItems="center">
-              <Text fontSize="$4" fontWeight="bold">
+              <Text fontSize={FONT_SIZES.lg} fontWeight="700">
                 {avgHumidity}%
               </Text>
-              <Text fontSize="$2" color="$gray11">
+              <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
                 Avg Humidity
               </Text>
             </YStack>
             <YStack alignItems="center">
-              <Text fontSize="$4" fontWeight="bold">
+              <Text fontSize={FONT_SIZES.lg} fontWeight="700">
                 {maxPrecipitation.toFixed(1)}mm
               </Text>
-              <Text fontSize="$2" color="$gray11">
+              <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
                 Max Rain
               </Text>
             </YStack>
@@ -118,139 +129,132 @@ export function WeatherSegment({ weatherPoints }: WeatherSegmentProps) {
       </Card>
 
       {/* Weather Points */}
-      <Text fontSize="$4" fontWeight="600">
+      <Text fontSize={FONT_SIZES.lg} fontWeight="600">
         Weather at {weatherPoints.length} kilometer intervals
       </Text>
       
       {weatherPoints.map((weatherPoint, index) => (
         <Card 
           key={index} 
-          padding="$3" 
-          backgroundColor={selectedIndex === index ? '$blue1' : '$background'}
-          borderColor={selectedIndex === index ? '$blue7' : '$gray6'}
-          borderWidth={1}
-          onPress={() => setSelectedIndex(selectedIndex === index ? null : index)}
+          padding={SPACING.md} 
+          backgroundColor={selectedIndex === index ? colors.primaryContainer : colors.surface}
+          style={{
+            borderWidth: selectedIndex === index ? 2 : 1,
+            borderColor: selectedIndex === index ? colors.primary : colors.outline,
+          }}
         >
-          <XStack space="$3" alignItems="center">
-            {/* Distance Marker */}
-            <YStack alignItems="center" minWidth={60}>
+          <Pressable
+            onPress={() => onWeatherPointSelect?.(index)}
+            style={{ flex: 1 }}
+          >
+            <XStack space="md" alignItems="center">
+              {/* Weather Icon */}
               <YStack
-                width={32}
-                height={32}
-                backgroundColor="$blue7"
-                borderRadius={16}
+                width={48}
+                height={48}
+                backgroundColor={colors.primary}
+                borderRadius={24}
                 alignItems="center"
                 justifyContent="center"
-                marginBottom="$1"
+                style={{ marginBottom: SPACING.xs }}
               >
-                <Text fontSize="$2" color="white" fontWeight="bold">
-                  {Math.round(weatherPoint.distanceFromStart / 1000)}
+                <Text fontSize={FONT_SIZES.sm} color="white" fontWeight="700">
+                  {getWeatherIcon(weatherPoint.weather)}
                 </Text>
               </YStack>
-              <Text fontSize="$1" color="$gray11">
-                km
+
+              {/* Distance */}
+              <Text fontSize={FONT_SIZES.xl}>
+                {index === 0 ? 'Start' : `${index}km`}
               </Text>
-            </YStack>
 
-            {/* Weather Icon */}
-            <Text fontSize="$6">
-              {getWeatherIcon(weatherPoint.weather.icon)}
-            </Text>
-
-            {/* Weather Info */}
-            <YStack flex={1} space="$1">
-              <XStack justifyContent="space-between" alignItems="center">
-                <Text fontSize="$4" fontWeight="bold" color={getTemperatureColor(weatherPoint.weather.temperature)}>
+              {/* Weather Details */}
+              <YStack flex={1} space="xs">
+                {/* Temperature */}
+                <Text fontSize={FONT_SIZES.lg} fontWeight="700" color={getTemperatureColor(weatherPoint.weather.temperature)}>
                   {weatherPoint.weather.temperature}°C
                 </Text>
-                <Text fontSize="$2" color="$gray11">
-                  {formatDistance(weatherPoint.distanceFromStart)} from start
+                <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
+                  {weatherPoint.weather.description}
                 </Text>
-              </XStack>
-              
-              <Text 
-                fontSize="$3" 
-                color={getWeatherConditionColor(weatherPoint.weather.description)}
-                style={{ textTransform: 'capitalize' }}
+              </YStack>
+
+              {/* Additional Info */}
+              <YStack 
+                alignItems="flex-end"
+                style={{ minWidth: 80 }}
               >
-                {weatherPoint.weather.description}
-              </Text>
-              
-              <XStack space="$3">
-                <Text fontSize="$2" color="$gray11">
-                  💧 {weatherPoint.weather.humidity}%
-                </Text>
-                <Text fontSize="$2" color="$gray11">
-                  💨 {weatherPoint.weather.windSpeed.toFixed(1)} m/s
-                </Text>
-                {weatherPoint.weather.precipitation > 0 && (
-                  <Text fontSize="$2" color="$blue9">
-                    🌧️ {weatherPoint.weather.precipitation.toFixed(1)}mm
+                {/* Wind and Humidity */}
+                <XStack space="md">
+                  <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
+                    Wind: {weatherPoint.weather.windSpeed.toFixed(1)} m/s
                   </Text>
-                )}
-              </XStack>
-            </YStack>
-
-            {/* Expand Icon */}
-            <Text fontSize="$3" color="$gray9">
-              {selectedIndex === index ? '▼' : '▶'}
-            </Text>
-          </XStack>
-
-          {/* Expanded Details */}
-          {selectedIndex === index && (
-            <YStack marginTop="$3" paddingTop="$3" borderTopWidth={1} borderColor="$gray4">
-              <YStack space="$2">
-                <Text fontSize="$3" fontWeight="bold">
-                  Detailed Weather Information
-                </Text>
-                
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$2" color="$gray11">Temperature:</Text>
-                  <Text fontSize="$2">{weatherPoint.weather.temperature}°C</Text>
-                </XStack>
-                
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$2" color="$gray11">Humidity:</Text>
-                  <Text fontSize="$2">{weatherPoint.weather.humidity}%</Text>
-                </XStack>
-                
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$2" color="$gray11">Wind Speed:</Text>
-                  <Text fontSize="$2">{weatherPoint.weather.windSpeed.toFixed(1)} m/s</Text>
-                </XStack>
-                
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$2" color="$gray11">Precipitation:</Text>
-                  <Text fontSize="$2">{weatherPoint.weather.precipitation.toFixed(1)}mm</Text>
-                </XStack>
-                
-                <XStack justifyContent="space-between">
-                  <Text fontSize="$2" color="$gray11">Location:</Text>
-                  <Text fontSize="$2">
-                    {weatherPoint.location.latitude.toFixed(4)}, {weatherPoint.location.longitude.toFixed(4)}
+                  <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
+                    Humidity: {weatherPoint.weather.humidity}%
                   </Text>
+                  {weatherPoint.weather.precipitation > 0 && (
+                    <Text fontSize={FONT_SIZES.sm} color={colors.primary}>
+                      Rain: {weatherPoint.weather.precipitation.toFixed(1)}mm
+                    </Text>
+                  )}
                 </XStack>
               </YStack>
-            </YStack>
-          )}
+            </XStack>
+
+            {/* Location Info */}
+            <Text fontSize={FONT_SIZES.md} color={colors.onSurface}>
+              No location data available
+            </Text>
+
+            {/* Expanded Details when selected */}
+            {selectedIndex === index && (
+              <YStack margin={SPACING.md} style={{ paddingTop: SPACING.md, borderTopWidth: 1, borderColor: colors.outline }}>
+                <YStack space="sm">
+                  <Text fontSize={FONT_SIZES.md} fontWeight="700">
+                    Detailed Weather Information
+                  </Text>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>Temperature:</Text>
+                    <Text fontSize={FONT_SIZES.sm}>{weatherPoint.weather.temperature}°C</Text>
+                  </XStack>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>Humidity:</Text>
+                    <Text fontSize={FONT_SIZES.sm}>{weatherPoint.weather.humidity}%</Text>
+                  </XStack>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>Wind Speed:</Text>
+                    <Text fontSize={FONT_SIZES.sm}>{weatherPoint.weather.windSpeed.toFixed(1)} m/s</Text>
+                  </XStack>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>Precipitation:</Text>
+                    <Text fontSize={FONT_SIZES.sm}>{weatherPoint.weather.precipitation.toFixed(1)}mm</Text>
+                  </XStack>
+                  <XStack justifyContent="space-between">
+                    <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>Location:</Text>
+                    <Text fontSize={FONT_SIZES.sm}>
+                      {weatherPoint.location.latitude.toFixed(4)}, {weatherPoint.location.longitude.toFixed(4)}
+                    </Text>
+                  </XStack>
+                </YStack>
+              </YStack>
+            )}
+          </Pressable>
         </Card>
       ))}
 
-      {/* Weather Tips */}
-      <Card padding="$3" backgroundColor="$yellow1">
-        <YStack space="$2">
-          <Text fontSize="$3" fontWeight="bold" color="$yellow11">
-            💡 Weather Tips
-          </Text>
-          <Text fontSize="$2" color="$yellow11">
-            • Check weather conditions before departure
-            • Bring appropriate clothing for temperature changes
-            • Consider rain gear if precipitation is expected
-            • Plan for longer travel times in adverse weather
-          </Text>
-        </YStack>
-      </Card>
+      {/* Warning if severe weather */}
+      {maxPrecipitation > 5 && (
+        <Card padding={SPACING.md} backgroundColor={colors.errorContainer}>
+          <YStack space="sm">
+            <Text fontSize={FONT_SIZES.md} fontWeight="700" color={colors.error}>
+              ⚠️ Weather Warning
+            </Text>
+            <Text fontSize={FONT_SIZES.sm} color={colors.error}>
+              Heavy precipitation expected ({maxPrecipitation.toFixed(1)}mm). Consider adjusting your travel plans.
+            </Text>
+          </YStack>
+        </Card>
+      )}
     </YStack>
   );
-} 
+}; 

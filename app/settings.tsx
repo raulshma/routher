@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { YStack, XStack, Text, Button, Card, ScrollView, RadioGroup } from 'tamagui';
+import { YStack, XStack, Text, Button, Card, ScrollView, RadioGroup } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -32,15 +32,14 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <YStack flex={1} padding="$4" space="$4">
+      <YStack flex={1} padding={32} space="xl">
         {/* Header */}
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="$6" fontWeight="bold">
+          <Text variant="headlineSmall" fontWeight="600">
             Settings
           </Text>
           <Button
-            size="$3"
-            circular
+            size="small"
             variant="outlined"
             onPress={() => router.back()}
           >
@@ -49,74 +48,37 @@ export default function SettingsScreen() {
         </XStack>
 
         <ScrollView showsVerticalScrollIndicator={false}>
-          <YStack space="$4">
+          <YStack space="xl">
             {/* Theme Settings */}
-            <Card padding="$4" backgroundColor="$gray2">
-              <YStack space="$3">
-                <Text fontSize="$5" fontWeight="bold">
+            <Card padding={32}>
+              <YStack space="lg">
+                <Text variant="titleLarge" fontWeight="600">
                   🎨 Appearance
                 </Text>
                 
-                <Text fontSize="$3" color="$gray11">
+                <Text variant="bodyMedium">
                   Choose how the app looks
                 </Text>
 
                 <RadioGroup
+                  options={themeOptions.map(option => ({
+                    value: option.value,
+                    label: `${option.icon} ${option.label}`,
+                    description: option.description
+                  }))}
                   value={themeMode}
                   onValueChange={(value) => setThemeMode(value as any)}
-                >
-                  <YStack space="$2">
-                    {themeOptions.map((option) => (
-                      <XStack
-                        key={option.value}
-                        alignItems="center"
-                        space="$3"
-                        padding="$3"
-                        backgroundColor={themeMode === option.value ? '$blue3' : '$gray1'}
-                        borderRadius="$3"
-                        borderWidth={themeMode === option.value ? 1 : 0}
-                        borderColor="$blue7"
-                        onPress={() => setThemeMode(option.value as any)}
-                      >
-                        <Text fontSize="$4">{option.icon}</Text>
-                        <YStack flex={1} space="$1">
-                          <Text fontSize="$4" fontWeight="bold">
-                            {option.label}
-                          </Text>
-                          <Text fontSize="$3" color="$gray11">
-                            {option.description}
-                          </Text>
-                        </YStack>
-                        <XStack
-                          width={20}
-                          height={20}
-                          borderRadius={10}
-                          borderWidth={2}
-                          borderColor={themeMode === option.value ? '$blue7' : '$gray7'}
-                          backgroundColor={themeMode === option.value ? '$blue7' : 'transparent'}
-                          alignItems="center"
-                          justifyContent="center"
-                        >
-                          {themeMode === option.value && (
-                            <Text fontSize="$2" color="white">
-                              ✓
-                            </Text>
-                          )}
-                        </XStack>
-                      </XStack>
-                    ))}
-                  </YStack>
-                </RadioGroup>
+                  spacing={16}
+                />
 
                 {/* Current theme indicator */}
                 <XStack
-                  padding="$2"
-                  backgroundColor={isDark ? '$gray3' : '$gray1'}
-                  borderRadius="$2"
+                  padding={16}
+                  borderRadius={8}
                   alignItems="center"
                   justifyContent="center"
                 >
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     Currently using: {isDark ? 'Dark' : 'Light'} theme
                   </Text>
                 </XStack>
@@ -124,27 +86,27 @@ export default function SettingsScreen() {
             </Card>
 
             {/* App Information */}
-            <Card padding="$4" backgroundColor="$gray2">
-              <YStack space="$3">
-                <Text fontSize="$5" fontWeight="bold">
+            <Card padding={32}>
+              <YStack space="lg">
+                <Text variant="titleLarge" fontWeight="600">
                   📱 App Information
                 </Text>
                 
-                <YStack space="$2">
+                <YStack space="sm">
                   <XStack justifyContent="space-between">
-                    <Text fontSize="$3" color="$gray11">
+                    <Text variant="bodyMedium">
                       Version
                     </Text>
-                    <Text fontSize="$3" fontWeight="bold">
+                    <Text variant="bodyMedium" fontWeight="600">
                       1.0.0
                     </Text>
                   </XStack>
                   
                   <XStack justifyContent="space-between">
-                    <Text fontSize="$3" color="$gray11">
+                    <Text variant="bodyMedium">
                       Build
                     </Text>
-                    <Text fontSize="$3" fontWeight="bold">
+                    <Text variant="bodyMedium" fontWeight="600">
                       December 2024
                     </Text>
                   </XStack>
@@ -153,35 +115,35 @@ export default function SettingsScreen() {
             </Card>
 
             {/* Features */}
-            <Card padding="$4" backgroundColor="$gray2">
-              <YStack space="$3">
-                <Text fontSize="$5" fontWeight="bold">
+            <Card padding={32}>
+              <YStack space="lg">
+                <Text variant="titleLarge" fontWeight="600">
                   ✨ Features
                 </Text>
                 
-                <YStack space="$1">
-                  <Text fontSize="$3" color="$gray11">
+                <YStack space="xs">
+                  <Text variant="bodyMedium">
                     ✅ Interactive route planning
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Multiple waypoints support
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Route alternatives comparison
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Weather integration
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Route saving and loading
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Location search with autocomplete
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Multi-modal transportation
                   </Text>
-                  <Text fontSize="$3" color="$gray11">
+                  <Text variant="bodyMedium">
                     ✅ Turn-by-turn directions
                   </Text>
                 </YStack>
@@ -189,16 +151,16 @@ export default function SettingsScreen() {
             </Card>
 
             {/* Quick Actions */}
-            <Card padding="$4" backgroundColor="$gray2">
-              <YStack space="$3">
-                <Text fontSize="$5" fontWeight="bold">
+            <Card padding={32}>
+              <YStack space="lg">
+                <Text variant="titleLarge" fontWeight="600">
                   🚀 Quick Actions
                 </Text>
                 
-                <XStack space="$2">
+                <XStack space="sm">
                   <Button
-                    flex={1}
-                    backgroundColor="$blue7"
+                    style={{ flex: 1 }}
+                    variant="filled"
                     onPress={() => {
                       router.back();
                     }}
@@ -207,7 +169,7 @@ export default function SettingsScreen() {
                   </Button>
                   
                   <Button
-                    flex={1}
+                    style={{ flex: 1 }}
                     variant="outlined"
                     onPress={() => {
                       router.back();
@@ -220,11 +182,11 @@ export default function SettingsScreen() {
             </Card>
 
             {/* Footer */}
-            <YStack alignItems="center" padding="$4">
-              <Text fontSize="$3" color="$gray10" textAlign="center">
+            <YStack alignItems="center" padding={32}>
+              <Text variant="bodyMedium" textAlign="center">
                 Route & Weather Planner
               </Text>
-              <Text fontSize="$2" color="$gray9" textAlign="center">
+              <Text variant="bodySmall" textAlign="center">
                 Built with React Native & Expo
               </Text>
             </YStack>

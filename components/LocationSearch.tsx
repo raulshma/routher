@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Alert } from 'react-native';
-import { YStack, XStack, Button, Input, Text } from 'tamagui';
+import { YStack, XStack, Button, Input, Text } from '@/components/ui';
 import { useDebounce } from 'use-debounce';
 import { Location } from '@/types';
 import { GeocodingService, SearchSuggestion, GeocodeResult } from '@/services/geocodingService';
@@ -120,8 +120,8 @@ export function LocationSearch({
   };
 
   return (
-    <YStack space="$2">
-      <XStack space="$2" alignItems="center">
+    <YStack space={"sm"}>
+      <XStack space={"sm"} alignItems="center">
         <Input
           flex={1}
           placeholder={placeholder}
@@ -154,7 +154,7 @@ export function LocationSearch({
         />
       )}
       
-      <Text fontSize="$2" color="$gray11" textAlign="center">
+      <Text fontSize={12} color="$gray11" textAlign="center">
         {showSuggestions && isSearching ? 
           'Searching...' : 
           'Search for addresses, cities, landmarks, or points of interest'

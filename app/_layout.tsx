@@ -5,8 +5,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
-import { TamaguiProvider } from '@tamagui/core';
-import config from '../tamagui.config';
+
 import { RouteProvider } from '@/contexts/RouteContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 
@@ -27,31 +26,29 @@ function RootLayoutNav() {
   const { isDark } = useTheme();
 
   return (
-    <TamaguiProvider config={config} defaultTheme={isDark ? 'dark' : 'light'}>
-      <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-        <RouteProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-            <Stack.Screen 
-              name="route-details" 
-              options={{ 
-                headerShown: true,
-                title: 'Route Details',
-                presentation: 'card',
-              }} 
-            />
-            <Stack.Screen 
-              name="settings" 
-              options={{ 
-                headerShown: false,
-                presentation: 'modal',
-              }} 
-            />
-          </Stack>
-        </RouteProvider>
-      </NavigationThemeProvider>
-    </TamaguiProvider>
+    <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <RouteProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen 
+            name="route-details" 
+            options={{ 
+              headerShown: true,
+              title: 'Route Details',
+              presentation: 'card',
+            }} 
+          />
+          <Stack.Screen 
+            name="settings" 
+            options={{ 
+              headerShown: false,
+              presentation: 'modal',
+            }} 
+          />
+        </Stack>
+      </RouteProvider>
+    </NavigationThemeProvider>
   );
 }
 

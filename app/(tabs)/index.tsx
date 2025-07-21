@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { StyleSheet, Alert } from 'react-native';
 import * as Location from 'expo-location';
-import { YStack, XStack, Button, Text, ScrollView, Switch } from 'tamagui';
+import { YStack, XStack, Button, Text, ScrollView, Switch } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -20,7 +20,7 @@ export default function RoutePlannerScreen() {
   const [startPoint, setStartPoint] = useState<LocationType | undefined>();
   const [endPoint, setEndPoint] = useState<LocationType | undefined>();
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
-  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('car');
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleType>('driving');
   const [routeCoordinates, setRouteCoordinates] = useState<LocationType[]>([]);
   const [routeAlternatives, setRouteAlternatives] = useState<RouteAlternative[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState<string>('route-0');
@@ -352,7 +352,7 @@ export default function RoutePlannerScreen() {
 
         {/* Controls */}
         <ScrollView>
-          <YStack padding="$3" space="$3" backgroundColor="$background">
+          <YStack padding={24} space="lg">
             {/* Vehicle Selection */}
             <VehicleSelector
               selectedVehicle={selectedVehicle}
@@ -360,14 +360,13 @@ export default function RoutePlannerScreen() {
             />
 
             {/* Alternative Routes Toggle */}
-            <XStack justifyContent="space-between" alignItems="center" padding="$2" backgroundColor="$gray1" borderRadius="$3">
-              <Text fontSize="$3" fontWeight="bold">
+            <XStack justifyContent="space-between" alignItems="center" padding={16} borderRadius={12}>
+              <Text variant="titleMedium" fontWeight="600">
                 🔄 Show Route Alternatives
               </Text>
               <Switch
                 checked={showAlternatives}
                 onCheckedChange={setShowAlternatives}
-                size="$3"
               />
             </XStack>
 
@@ -398,11 +397,11 @@ export default function RoutePlannerScreen() {
             </SearchErrorBoundary>
 
             {/* Action Buttons */}
-            <XStack space="$2" justifyContent="center">
+            <XStack space="md" justifyContent="center">
               <Button
                 onPress={getCurrentLocation}
-                backgroundColor="$green7"
-                flex={1}
+                variant="tonal"
+                style={{ flex: 1 }}
               >
                 📍 Use Current Location
               </Button>
@@ -410,8 +409,8 @@ export default function RoutePlannerScreen() {
               <Button
                 onPress={calculateRoute}
                 disabled={!canCalculateRoute}
-                backgroundColor="$blue7"
-                flex={1}
+                variant="filled"
+                style={{ flex: 1 }}
               >
                 {isCalculatingRoute ? 'Calculating...' : '🗺️ Get Directions'}
               </Button>
@@ -419,42 +418,42 @@ export default function RoutePlannerScreen() {
 
             {/* Route Information */}
             {routeStats && (
-              <YStack space="$2" padding="$3" backgroundColor="$gray1" borderRadius="$3">
-                <Text fontSize="$4" fontWeight="bold" textAlign="center">
+              <YStack space="sm" padding={24} borderRadius={12}>
+                <Text variant="titleMedium" fontWeight="600" textAlign="center">
                   Route Information
                 </Text>
                 <XStack justifyContent="space-around">
                   <YStack alignItems="center">
-                    <Text fontSize="$2" color="$gray11">Distance</Text>
-                    <Text fontSize="$3" fontWeight="bold">{routeStats.distance}</Text>
+                    <Text variant="bodySmall">Distance</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.distance}</Text>
                   </YStack>
                   <YStack alignItems="center">
-                    <Text fontSize="$2" color="$gray11">Duration</Text>
-                    <Text fontSize="$3" fontWeight="bold">{routeStats.duration}</Text>
+                    <Text variant="bodySmall">Duration</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.duration}</Text>
                   </YStack>
                   <YStack alignItems="center">
-                    <Text fontSize="$2" color="$gray11">Waypoints</Text>
-                    <Text fontSize="$3" fontWeight="bold">{routeStats.waypoints}</Text>
+                    <Text variant="bodySmall">Waypoints</Text>
+                    <Text variant="titleSmall" fontWeight="600">{routeStats.waypoints}</Text>
                   </YStack>
                 </XStack>
               </YStack>
             )}
 
             {/* Save/Clear Route */}
-            <XStack space="$2" justifyContent="center">
+            <XStack space="md" justifyContent="center">
               <Button
                 onPress={saveRoute}
                 disabled={!routeInfo}
-                backgroundColor="$purple7"
-                flex={1}
+                variant="tonal"
+                style={{ flex: 1 }}
               >
                 💾 Save Route
               </Button>
               
               <Button
                 onPress={clearRoute}
-                backgroundColor="$red7"
-                flex={1}
+                variant="outlined"
+                style={{ flex: 1 }}
               >
                 🗑️ Clear Route
               </Button>
@@ -462,8 +461,8 @@ export default function RoutePlannerScreen() {
 
             {/* Route Status */}
             {isRouteLoaded && (
-              <YStack padding="$2" backgroundColor="$blue2" borderRadius="$3">
-                <Text fontSize="$3" textAlign="center" color="$blue11">
+              <YStack padding={16} borderRadius={12}>
+                <Text variant="bodyMedium" textAlign="center">
                   📂 Loaded saved route: "{loadedRoute?.name}"
                 </Text>
               </YStack>

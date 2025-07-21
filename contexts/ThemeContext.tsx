@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
+import { createMD3Theme, MD3ColorScheme } from '../components/ui/MD3Theme';
 
 type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -9,6 +10,7 @@ interface ThemeContextType {
   setThemeMode: (mode: ThemeMode) => void;
   isDark: boolean;
   toggleTheme: () => void;
+  colors: MD3ColorScheme;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -57,11 +59,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const theme = createMD3Theme(isDark);
+
   const value: ThemeContextType = {
     themeMode,
     setThemeMode,
     isDark,
     toggleTheme,
+    colors: theme.colors,
   };
 
   return (

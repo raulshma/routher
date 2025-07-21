@@ -14,10 +14,10 @@ export class AccessibilityHelper {
   /**
    * Announce a message to screen readers
    */
-  static announce(announcement: AccessibilityAnnouncement): void {
+  static async announce(announcement: AccessibilityAnnouncement): Promise<void> {
     const { message, priority = 'medium' } = announcement;
     
-    if (AccessibilityInfo.isScreenReaderEnabled) {
+    if (await AccessibilityInfo.isScreenReaderEnabled()) {
       AccessibilityInfo.announceForAccessibility(message);
     }
   }
@@ -25,8 +25,8 @@ export class AccessibilityHelper {
   /**
    * Focus on a specific component for accessibility
    */
-  static focusOnElement(ref: React.RefObject<any>): void {
-    if (ref.current && AccessibilityInfo.isScreenReaderEnabled) {
+  static async focusOnElement(ref: React.RefObject<any>): Promise<void> {
+    if (ref.current && await AccessibilityInfo.isScreenReaderEnabled()) {
       const reactTag = findNodeHandle(ref.current);
       if (reactTag) {
         AccessibilityInfo.setAccessibilityFocus(reactTag);
