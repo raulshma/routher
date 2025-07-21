@@ -147,10 +147,8 @@ export function LocationSearch({
         <SearchSuggestions
           suggestions={suggestions}
           isLoading={isSearching}
-          hasMore={hasMore}
-          onSuggestionPress={handleSuggestionPress}
-          onClearRecent={showRecentSearches ? handleClearRecent : undefined}
-          showRecentHeader={showRecentSearches && debouncedSearchQuery.trim().length < 2}
+          onSuggestionSelect={handleSuggestionPress}
+          searchQuery={debouncedSearchQuery}
         />
       )}
       

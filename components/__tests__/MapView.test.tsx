@@ -161,22 +161,22 @@ describe('MapViewComponent', () => {
   });
 
   it('handles waypoint interactions', () => {
-    const onWaypointPress = jest.fn();
-    const onWaypointLongPress = jest.fn();
+    const onWaypointAdd = jest.fn();
+    const onWaypointRemove = jest.fn();
 
     render(
       <MapViewComponent
         {...defaultProps}
         waypoints={mockWaypoints}
-        onWaypointPress={onWaypointPress}
-        onWaypointLongPress={onWaypointLongPress}
+        onWaypointAdd={onWaypointAdd}
+        onWaypointRemove={onWaypointRemove}
       />
     );
 
     // Test would require more detailed marker interaction simulation
     // This is a basic structure for waypoint interaction tests
-    expect(onWaypointPress).toBeDefined();
-    expect(onWaypointLongPress).toBeDefined();
+    expect(onWaypointAdd).toBeDefined();
+    expect(onWaypointRemove).toBeDefined();
   });
 
   it('handles route alternatives display', () => {
@@ -189,8 +189,8 @@ describe('MapViewComponent', () => {
         ],
         totalDistance: 1000,
         totalDuration: 3600,
-        polylineColor: '#007AFF',
-        label: 'Fastest Route',
+        geometry: [mockStartPoint, mockEndPoint],
+        description: 'Fastest Route',
       },
       {
         id: 'route-1',
@@ -200,8 +200,8 @@ describe('MapViewComponent', () => {
         ],
         totalDistance: 900,
         totalDuration: 3800,
-        polylineColor: '#34C759',
-        label: 'Shortest Route',
+        geometry: [mockStartPoint, mockEndPoint],
+        description: 'Shortest Route',
       },
     ];
 

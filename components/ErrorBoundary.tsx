@@ -82,7 +82,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 this.setState({ hasError: false, error: undefined, errorInfo: undefined });
               }}
               backgroundColor="$blue7"
-              pressStyle={{ scale: 0.95 }}
+              pressStyle={{ transform: [{ scale: 0.95 }] }}
             >
               🔄 Try Again
             </Button>

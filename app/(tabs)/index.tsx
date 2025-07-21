@@ -9,6 +9,7 @@ import { MapViewComponent } from '@/components/MapView';
 import { VehicleSelector } from '@/components/VehicleSelector';
 import { LocationSearch } from '@/components/LocationSearch';
 import { RouteOptions } from '@/components/RouteOptions';
+import { RouteAlternatives } from '@/components/RouteAlternatives';
 import { MapErrorBoundary, RouteErrorBoundary, SearchErrorBoundary } from '@/components/ErrorBoundary';
 import { Location as LocationType, VehicleType, Route, WeatherPoint, Waypoint } from '@/types';
 import { RoutingService, RouteAlternative } from '@/services/routingService';
@@ -373,7 +374,7 @@ export default function RoutePlannerScreen() {
             {/* Route Alternatives Display with Error Boundary */}
             {routeAlternatives.length > 0 && (
               <RouteErrorBoundary>
-                <RouteOptions
+                <RouteAlternatives
                   alternatives={routeAlternatives}
                   selectedRouteId={selectedRouteId}
                   onRouteSelect={handleRouteSelect}
