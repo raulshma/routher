@@ -36,77 +36,77 @@ export interface MD3ColorScheme {
 }
 
 export const lightColorScheme: MD3ColorScheme = {
-  primary: '#6750A4',
+  primary: '#6366F1',
   onPrimary: '#FFFFFF',
-  primaryContainer: '#EADDFF',
-  onPrimaryContainer: '#21005D',
-  secondary: '#625B71',
+  primaryContainer: '#E0E7FF',
+  onPrimaryContainer: '#1E1B4B',
+  secondary: '#10B981',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#E8DEF8',
-  onSecondaryContainer: '#1D192B',
-  tertiary: '#7D5260',
+  secondaryContainer: '#D1FAE5',
+  onSecondaryContainer: '#064E3B',
+  tertiary: '#F59E0B',
   onTertiary: '#FFFFFF',
-  tertiaryContainer: '#FFD8E4',
-  onTertiaryContainer: '#31111D',
-  error: '#BA1A1A',
+  tertiaryContainer: '#FEF3C7',
+  onTertiaryContainer: '#92400E',
+  error: '#EF4444',
   onError: '#FFFFFF',
-  errorContainer: '#FFDAD6',
-  onErrorContainer: '#410002',
-  background: '#FFFBFE',
-  onBackground: '#1C1B1F',
-  surface: '#FFFBFE',
-  onSurface: '#1C1B1F',
-  surfaceVariant: '#E7E0EC',
-  onSurfaceVariant: '#49454F',
-  outline: '#79747E',
-  outlineVariant: '#CAC4D0',
+  errorContainer: '#FEE2E2',
+  onErrorContainer: '#7F1D1D',
+  background: '#FAFAFA',
+  onBackground: '#1F1F1F',
+  surface: '#FFFFFF',
+  onSurface: '#1F1F1F',
+  surfaceVariant: '#F3F4F6',
+  onSurfaceVariant: '#6B7280',
+  outline: '#D1D5DB',
+  outlineVariant: '#E5E7EB',
   shadow: '#000000',
   scrim: '#000000',
-  inverseSurface: '#313033',
-  inverseOnSurface: '#F4EFF4',
-  inversePrimary: '#D0BCFF',
+  inverseSurface: '#262626',
+  inverseOnSurface: '#F5F5F5',
+  inversePrimary: '#818CF8',
   surfaceContainerLowest: '#FFFFFF',
-  surfaceContainerLow: '#F7F2FA',
-  surfaceContainer: '#F3EDF7',
-  surfaceContainerHigh: '#ECE6F0',
-  surfaceContainerHighest: '#E6E0E9',
+  surfaceContainerLow: '#FAFAFA',
+  surfaceContainer: '#F9FAFB',
+  surfaceContainerHigh: '#F3F4F6',
+  surfaceContainerHighest: '#E5E7EB',
 };
 
 export const darkColorScheme: MD3ColorScheme = {
-  primary: '#D0BCFF',
-  onPrimary: '#381E72',
-  primaryContainer: '#4F378B',
-  onPrimaryContainer: '#EADDFF',
-  secondary: '#CCC2DC',
-  onSecondary: '#332D41',
-  secondaryContainer: '#4A4458',
-  onSecondaryContainer: '#E8DEF8',
-  tertiary: '#EFB8C8',
-  onTertiary: '#492532',
-  tertiaryContainer: '#633B48',
-  onTertiaryContainer: '#FFD8E4',
-  error: '#FFB4AB',
-  onError: '#690005',
-  errorContainer: '#93000A',
-  onErrorContainer: '#FFDAD6',
-  background: '#10090D',
-  onBackground: '#E6E0E9',
-  surface: '#10090D',
-  onSurface: '#E6E0E9',
-  surfaceVariant: '#49454F',
-  onSurfaceVariant: '#CAC4D0',
-  outline: '#938F99',
-  outlineVariant: '#49454F',
+  primary: '#818CF8',
+  onPrimary: '#1E1B4B',
+  primaryContainer: '#312E81',
+  onPrimaryContainer: '#E0E7FF',
+  secondary: '#34D399',
+  onSecondary: '#064E3B',
+  secondaryContainer: '#065F46',
+  onSecondaryContainer: '#D1FAE5',
+  tertiary: '#FBBF24',
+  onTertiary: '#92400E',
+  tertiaryContainer: '#B45309',
+  onTertiaryContainer: '#FEF3C7',
+  error: '#F87171',
+  onError: '#7F1D1D',
+  errorContainer: '#991B1B',
+  onErrorContainer: '#FEE2E2',
+  background: '#0F0F0F',
+  onBackground: '#F5F5F5',
+  surface: '#171717',
+  onSurface: '#F5F5F5',
+  surfaceVariant: '#262626',
+  onSurfaceVariant: '#A3A3A3',
+  outline: '#525252',
+  outlineVariant: '#404040',
   shadow: '#000000',
   scrim: '#000000',
-  inverseSurface: '#E6E0E9',
-  inverseOnSurface: '#313033',
-  inversePrimary: '#6750A4',
-  surfaceContainerLowest: '#0B0709',
-  surfaceContainerLow: '#1D1B20',
-  surfaceContainer: '#211F26',
-  surfaceContainerHigh: '#2B2930',
-  surfaceContainerHighest: '#36343B',
+  inverseSurface: '#F5F5F5',
+  inverseOnSurface: '#262626',
+  inversePrimary: '#6366F1',
+  surfaceContainerLowest: '#0A0A0A',
+  surfaceContainerLow: '#171717',
+  surfaceContainer: '#1F1F1F',
+  surfaceContainerHigh: '#262626',
+  surfaceContainerHighest: '#2D2D2D',
 };
 
 export interface MD3Typography {
@@ -202,6 +202,123 @@ export interface MD3Typography {
   };
 }
 
+// Enhanced elevation with modern glassmorphism effects
+export const elevation = {
+  level0: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+  level1: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  level2: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  level3: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  level4: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  level5: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  glassmorphism: {
+    shadowColor: 'rgba(99, 102, 241, 0.3)',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  floatingCard: {
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+};
+
+// Modern spacing system with consistent rhythm
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+  rhythm: (multiplier: number) => 8 * multiplier, // 8px rhythm
+};
+
+// Enhanced border radius system
+export const borderRadius = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  round: 999,
+  card: 16,
+  button: 12,
+  fab: 28,
+  search: 24,
+};
+
+// Animation durations and easings
+export const animations = {
+  timing: {
+    fast: 150,
+    normal: 250,
+    slow: 350,
+    verySlow: 500,
+  },
+  easing: {
+    easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
+    easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+    spring: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+  },
+};
+
+// Gradient definitions for modern UI
+export const gradients = {
+  primary: ['#6366F1', '#8B5CF6'],
+  secondary: ['#10B981', '#059669'],
+  tertiary: ['#F59E0B', '#D97706'],
+  error: ['#EF4444', '#DC2626'],
+  background: ['#FAFAFA', '#F9FAFB'],
+  darkBackground: ['#0F0F0F', '#171717'],
+  glass: ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)'],
+  darkGlass: ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)'],
+  route: ['#6366F1', '#3B82F6'],
+  weather: ['#0EA5E9', '#06B6D4'],
+};
+
 export const typography: MD3Typography = {
   displayLarge: {
     fontSize: 57,
@@ -295,6 +412,7 @@ export const typography: MD3Typography = {
   },
 };
 
+// Updated interface to include new properties
 export interface MD3Spacing {
   xs: number;
   sm: number;
@@ -302,106 +420,20 @@ export interface MD3Spacing {
   lg: number;
   xl: number;
   xxl: number;
+  xxxl: number;
+  rhythm: (multiplier: number) => number;
 }
-
-export const spacing: MD3Spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-};
 
 export interface MD3Elevation {
-  level0: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
-  level1: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
-  level2: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
-  level3: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
-  level4: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
-  level5: {
-    shadowColor: string;
-    shadowOffset: { width: number; height: number };
-    shadowOpacity: number;
-    shadowRadius: number;
-    elevation: number;
-  };
+  level0: any;
+  level1: any;
+  level2: any;
+  level3: any;
+  level4: any;
+  level5: any;
+  glassmorphism: any;
+  floatingCard: any;
 }
-
-export const elevation: MD3Elevation = {
-  level0: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  level1: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  level2: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  level3: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.11,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  level4: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  level5: {
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-};
 
 export interface MD3Theme {
   colors: MD3ColorScheme;

@@ -533,36 +533,38 @@ export default function RoutePlannerScreen() {
           <YStack space="md" padding={20}>
             {/* Header with route status */}
             {!routeInfo && (
-              <YStack alignItems="center" space="sm" paddingVertical={20}>
-                <Ionicons name="map-outline" size={32} color="#ccc" />
-                <Text variant="titleMedium" color="#666">Plan your route</Text>
-                <Text variant="bodySmall" color="#999" textAlign="center">
-                  Enter start and destination points to get directions
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateIcon}>🗺️</Text>
+                <Text style={styles.emptyStateTitle}>Plan your route</Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  Enter start and destination points to get directions with real-time weather data
                 </Text>
-              </YStack>
+              </View>
             )}
 
             {/* Quick Actions when no route */}
             {!routeInfo && (
-              <XStack space="sm" justifyContent="center">
+              <View style={styles.actionButtonsContainer}>
                 <Button
                   onPress={getCurrentLocation}
-                  variant="tonal"
+                  variant="gradient"
+                  size="medium"
                   style={styles.quickActionButton}
+                  icon={<Ionicons name="locate" size={18} color="white" />}
                 >
-                  <Ionicons name="locate" size={16} color="#4285F4" />
-                  <Text>Current Location</Text>
+                  Current Location
                 </Button>
                 
                 <Button
                   onPress={toggleRouteControls}
                   variant="outlined"
+                  size="medium"
                   style={styles.quickActionButton}
+                  icon={<Ionicons name="options" size={18} color="#6366F1" />}
                 >
-                  <Ionicons name="options" size={16} color="#666" />
-                  <Text>Options</Text>
+                  Options
                 </Button>
-              </XStack>
+              </View>
             )}
 
             {/* Route Controls when route exists */}
@@ -588,24 +590,30 @@ export default function RoutePlannerScreen() {
 
             {/* Route Information */}
             {routeStats && (
-              <Card style={styles.routeInfoCard}>
-                <XStack justifyContent="space-around" padding={16}>
-                  <YStack alignItems="center">
-                    <Ionicons name="location" size={16} color="#666" />
-                    <Text variant="bodySmall" color="#666">Distance</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.distance}</Text>
-                  </YStack>
-                  <YStack alignItems="center">
-                    <Ionicons name="time" size={16} color="#666" />
-                    <Text variant="bodySmall" color="#666">Duration</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.duration}</Text>
-                  </YStack>
-                  <YStack alignItems="center">
-                    <Ionicons name="flag" size={16} color="#666" />
-                    <Text variant="bodySmall" color="#666">Stops</Text>
-                    <Text variant="titleSmall" fontWeight="600">{routeStats.waypoints}</Text>
-                  </YStack>
-                </XStack>
+              <Card variant="glass" style={styles.routeInfoCard} borderRadius={20}>
+                <View style={styles.routeStatsContainer}>
+                  <View style={styles.routeStatItem}>
+                    <View style={styles.routeStatIcon}>
+                      <Ionicons name="location" size={20} color="#6366F1" />
+                    </View>
+                    <Text style={styles.routeStatLabel}>Distance</Text>
+                    <Text style={styles.routeStatValue}>{routeStats.distance}</Text>
+                  </View>
+                  <View style={styles.routeStatItem}>
+                    <View style={styles.routeStatIcon}>
+                      <Ionicons name="time" size={20} color="#6366F1" />
+                    </View>
+                    <Text style={styles.routeStatLabel}>Duration</Text>
+                    <Text style={styles.routeStatValue}>{routeStats.duration}</Text>
+                  </View>
+                  <View style={styles.routeStatItem}>
+                    <View style={styles.routeStatIcon}>
+                      <Ionicons name="car" size={20} color="#6366F1" />
+                    </View>
+                    <Text style={styles.routeStatLabel}>Transport</Text>
+                    <Text style={styles.routeStatValue}>{selectedVehicle}</Text>
+                  </View>
+                </View>
               </Card>
             )}
 
@@ -641,7 +649,7 @@ export default function RoutePlannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
   },
   searchOverlay: {
     position: 'absolute',
@@ -653,71 +661,76 @@ const styles = StyleSheet.create({
   searchCard: {
     margin: 16,
     marginTop: 8,
-    borderRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   searchIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f0f0f0',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   searchSeparator: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 4,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    marginVertical: 8,
   },
   swapButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f0f0f0',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   fabContainer: {
     position: 'absolute',
-    right: 16,
-    bottom: 180,
+    right: 20,
+    bottom: 200,
     zIndex: 100,
   },
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    marginBottom: 16,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.1)',
   },
   primaryFab: {
-    backgroundColor: '#4285F4',
+    backgroundColor: '#6366F1',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 12,
   },
   routeControlsOverlay: {
     position: 'absolute',
-    top: 120,
-    left: 16,
-    right: 16,
+    top: 140,
+    left: 20,
+    right: 20,
     zIndex: 100,
   },
   routeControlsCard: {
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
   },
   bottomSheet: {
     position: 'absolute',
@@ -725,47 +738,106 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 15,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(99, 102, 241, 0.1)',
   },
   bottomSheetHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#ccc',
-    borderRadius: 2,
+    width: 48,
+    height: 5,
+    backgroundColor: 'rgba(99, 102, 241, 0.3)',
+    borderRadius: 3,
     alignSelf: 'center',
-    marginTop: 8,
+    marginTop: 12,
+    marginBottom: 8,
   },
   bottomSheetContent: {
     flex: 1,
   },
   primaryButton: {
     flex: 1,
-    borderRadius: 24,
   },
   quickActionButton: {
     flex: 1,
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    marginHorizontal: 4,
   },
   secondaryButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
+    marginHorizontal: 4,
   },
   routeInfoCard: {
-    borderRadius: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'rgba(99, 102, 241, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.1)',
   },
   statusCard: {
-    borderRadius: 12,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: 'rgba(16, 185, 129, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  emptyStateContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  routeStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  routeStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  routeStatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  routeStatLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  routeStatValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
   },
 });
