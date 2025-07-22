@@ -48,6 +48,8 @@ export interface Route {
 
 export type VehicleType = 'driving' | 'bicycle' | 'walking';
 
+export type WeatherProvider = 'openweather' | 'weatherapi';
+
 export interface RouteOptions {
   vehicle: VehicleType;
   avoidHighways: boolean;

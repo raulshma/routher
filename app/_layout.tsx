@@ -15,8 +15,8 @@ export {
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  // Set the main screen as the initial route
+  initialRouteName: 'index',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -29,21 +29,57 @@ function RootLayoutNav() {
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <RouteProvider>
         <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          <Stack.Screen 
+            name="index" 
+            options={{ 
+              headerShown: false,
+              statusBarStyle: isDark ? 'light' : 'dark',
+              statusBarBackgroundColor: 'transparent',
+            }} 
+          />
+          <Stack.Screen 
+            name="saved-routes" 
+            options={{ 
+              headerShown: true,
+              title: 'Saved Routes',
+              presentation: 'modal',
+              headerStyle: {
+                backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+              },
+              headerTitleStyle: {
+                fontSize: 18,
+                fontWeight: '600',
+              },
+            }} 
+          />
           <Stack.Screen 
             name="route-details" 
             options={{ 
               headerShown: true,
               title: 'Route Details',
               presentation: 'card',
+              headerStyle: {
+                backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+              },
+              headerTitleStyle: {
+                fontSize: 18,
+                fontWeight: '600',
+              },
             }} 
           />
           <Stack.Screen 
             name="settings" 
             options={{ 
-              headerShown: false,
+              headerShown: true,
+              title: 'Settings',
               presentation: 'modal',
+              headerStyle: {
+                backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+              },
+              headerTitleStyle: {
+                fontSize: 18,
+                fontWeight: '600',
+              },
             }} 
           />
         </Stack>

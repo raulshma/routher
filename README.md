@@ -16,10 +16,12 @@ A comprehensive mobile-responsive React Native application for route planning wi
 - **Accurate Timing**: Realistic travel time estimates
 
 ### 🌤️ Weather Integration
+- **Multiple Providers**: Support for OpenWeatherMap and WeatherAPI.com
 - **Real-time Weather**: Current weather conditions along your route
 - **1km Intervals**: Weather data every kilometer along your journey
 - **Detailed Information**: Temperature, humidity, wind speed, precipitation
 - **Visual Indicators**: Intuitive weather icons on the map
+- **Provider Selection**: Switch between weather providers in settings
 
 ### 💾 Route Management
 - **Save Routes**: Store your planned routes for future reference
@@ -54,16 +56,33 @@ Before running this application, ensure you have:
    npm install
    ```
 
-3. **Configure API Keys** (Optional but recommended):
+3. **Configure Weather API Keys** (Optional but recommended):
    
-   For better weather data, sign up for a free OpenWeatherMap API key:
+   The app supports multiple weather providers. You can configure one or both:
+
+   **Option A: OpenWeatherMap** (Default)
    - Visit https://openweathermap.org/api
-   - Sign up for a free account
+   - Sign up for a free account (1000 calls/day)
    - Get your API key
-   - Update `services/weatherService.ts`:
-   ```typescript
-   const OPENWEATHER_API_KEY = 'your-actual-api-key-here';
+   - Add to your `.env` file:
+   ```bash
+   EXPO_PUBLIC_OPEN_WEATHER_API_KEY=your_openweather_api_key_here
    ```
+
+   **Option B: WeatherAPI.com** (Alternative)
+   - Visit https://www.weatherapi.com/
+   - Sign up for a free account (1 million calls/month)
+   - Get your API key
+   - Add to your `.env` file:
+   ```bash
+   EXPO_PUBLIC_WEATHER_API_KEY=your_weatherapi_key_here
+   ```
+
+   **Configuration Notes:**
+   - Create a `.env` file in the project root if it doesn't exist
+   - The app will automatically detect available providers
+   - You can switch between providers in the app settings
+   - If no API keys are configured, demo weather data will be used
 
 ## Running the App
 
@@ -143,7 +162,8 @@ npm run web
 ### Services & APIs
 - **OpenStreetMap**: Map tiles and geocoding
 - **OSRM**: Open Source Routing Machine for directions
-- **OpenWeatherMap**: Weather data API
+- **OpenWeatherMap**: Primary weather data API
+- **WeatherAPI.com**: Alternative weather data provider
 - **AsyncStorage**: Local data persistence
 
 ### Navigation & State

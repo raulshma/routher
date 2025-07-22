@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView as RNScrollView } from 'react-native';
 import { YStack, XStack, Text, Button, Card, RadioGroup } from '@/components/ui';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
+import { WeatherService, type WeatherProvider } from '@/services/weatherService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { themeMode, setThemeMode, isDark } = useTheme();
+  const [currentWeatherProvider, setCurrentWeatherProvider] = useState<WeatherProvider>('openweather');
+  const [availableProviders, setAvailableProviders] = useState<WeatherProvider[]>([]);
+
+  useEffect(() => {
+    setCurrentWeatherProvider(WeatherService.getCurrentProvider());
+    setAvailableProviders(WeatherService.getAvailableProviders());
+  }, []);
+
+  const handleWeatherProviderChange = (provider: WeatherProvider) => {
+    WeatherService.setProvider(provider);
+    setCurrentWeatherProvider(provider);
+  };
 
   const themeOptions = [
     {
@@ -30,6 +43,21 @@ export default function SettingsScreen() {
       icon: 'moon-outline',
     },
   ];
+
+  const weatherProviderOptions = [
+    {
+      value: 'openweather',
+      label: 'OpenWeather',
+      description: 'OpenWeatherMap API',
+      icon: 'cloud-outline',
+    },
+    {
+      value: 'weatherapi',
+      label: 'WeatherAPI',
+      description: 'WeatherAPI.com service',
+      icon: 'partly-sunny-outline',
+    },
+  ].filter(option => availableProviders.includes(option.value as WeatherProvider));
 
   return (
     <SafeAreaView style={styles.container}>
@@ -92,6 +120,59 @@ export default function SettingsScreen() {
                 </View>
               </View>
             </Card>
+
+            {/* Weather Provider Settings */}
+            {weatherProviderOptions.length > 0 && (
+              <Card variant="elevated" style={styles.settingsCard} borderRadius={20}>
+                <View style={styles.cardContent}>
+                  <View style={styles.sectionHeader}>
+                    <View style={styles.sectionIcon}>
+                      <Ionicons name="cloud" size={24} color="#06B6D4" />
+                    </View>
+                    <View style={styles.sectionTitleContainer}>
+                      <Text style={styles.sectionTitle}>Weather Provider</Text>
+                      <Text style={styles.sectionDescription}>Choose your weather data source</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.optionsContainer}>
+                    <RadioGroup
+                      options={weatherProviderOptions.map(option => ({
+                        value: option.value,
+                        label: option.label,
+                        description: option.description
+                      }))}
+                      value={currentWeatherProvider}
+                      onValueChange={(value) => handleWeatherProviderChange(value as WeatherProvider)}
+                      spacing={16}
+                    />
+                  </View>
+
+                  {/* Current provider indicator */}
+                  <View style={styles.currentProviderContainer}>
+                    <View style={styles.currentProviderIcon}>
+                      <Ionicons 
+                        name={currentWeatherProvider === 'openweather' ? 'cloud' : 'partly-sunny'} 
+                        size={16} 
+                        color="#06B6D4" 
+                      />
+                    </View>
+                    <Text style={styles.currentProviderText}>
+                      Active provider: {weatherProviderOptions.find(p => p.value === currentWeatherProvider)?.label || 'Unknown'}
+                    </Text>
+                  </View>
+
+                  {weatherProviderOptions.length === 1 && (
+                    <View style={styles.warningContainer}>
+                      <Ionicons name="information-circle" size={16} color="#F59E0B" />
+                      <Text style={styles.warningText}>
+                        Configure additional API keys in your environment to enable more weather providers
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </Card>
+            )}
 
             {/* App Information */}
             <Card variant="elevated" style={styles.settingsCard} borderRadius={20}>
@@ -253,6 +334,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
+  },
+  currentProviderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(6, 182, 212, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.1)',
+    marginBottom: 12,
+  },
+  currentProviderIcon: {
+    marginRight: 8,
+  },
+  currentProviderText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#92400E',
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 18,
   },
   infoContainer: {
     marginTop: 8,

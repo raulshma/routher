@@ -3,6 +3,7 @@ import { StyleSheet, Alert, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Location, WeatherPoint, Waypoint } from '@/types';
 import { RouteAlternative } from '@/services/routingService';
+import { WeatherMarker } from '@/components/WeatherMarker';
 
 interface MapViewComponentProps {
   startPoint?: Location;
@@ -318,13 +319,13 @@ const MapViewComponent = React.memo(({
         </Marker>
       )}
 
-      {/* Weather Markers - Temporarily disabled */}
-      {/* {weatherPoints.map((weatherPoint, index) => (
+      {/* Weather Markers */}
+      {weatherPoints.map((weatherPoint, index) => (
         <WeatherMarker
           key={index}
           weatherPoint={weatherPoint}
         />
-      ))} */}
+      ))}
     </MapView>
   );
 });

@@ -28,6 +28,13 @@ export function LocationSearch({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [debouncedSearchText] = useDebounce(searchText, 300);
 
+  // Update searchText when value prop changes
+  useEffect(() => {
+    if (value !== undefined && value !== searchText) {
+      setSearchText(value);
+    }
+  }, [value]);
+
   // Load search suggestions when debounced text changes
   useEffect(() => {
     if (debouncedSearchText.length >= 2) {
@@ -177,11 +184,13 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 16,
+    fontWeight: '500',
     borderWidth: 0,
     backgroundColor: 'transparent',
-    paddingVertical: 8,
+    paddingVertical: 12,
     paddingHorizontal: 0,
     paddingRight: 32, // Space for clear button
+    color: '#1F2937',
   },
   clearButton: {
     position: 'absolute',
@@ -200,28 +209,30 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    marginTop: 4,
-    maxHeight: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
+    borderRadius: 16,
+    marginTop: 8,
+    maxHeight: 240,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
     zIndex: 1000,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.08)',
   },
   suggestionItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: 'rgba(99, 102, 241, 0.06)',
   },
   categoryIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#f5f5f5',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -202,214 +202,226 @@ export interface MD3Typography {
   };
 }
 
-// Enhanced elevation with modern glassmorphism effects
+// Healthcare App Professional Design System
 export const elevation = {
   level0: {
-    shadowColor: '#000',
+    shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0,
     shadowRadius: 0,
     elevation: 0,
   },
   level1: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  level2: {
-    shadowColor: '#000',
+    shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
-  level3: {
-    shadowColor: '#000',
+  level2: {
+    shadowColor: '#3B82F6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
-  },
-  level4: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 12,
     elevation: 4,
   },
-  level5: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  glassmorphism: {
-    shadowColor: 'rgba(99, 102, 241, 0.3)',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  floatingCard: {
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+  level3: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 6,
   },
+  level4: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  level5: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  // Healthcare app specific elevations
+  floatingCard: {
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  glassmorphism: {
+    shadowColor: '#1E293B',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+  modal: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.2,
+    shadowRadius: 32,
+    elevation: 16,
+  },
 };
 
-// Modern spacing system with consistent rhythm
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-  xxxl: 64,
-  rhythm: (multiplier: number) => 8 * multiplier, // 8px rhythm
-};
-
-// Enhanced border radius system
 export const borderRadius = {
   xs: 4,
   sm: 8,
   md: 12,
   lg: 16,
-  xl: 24,
-  xxl: 32,
-  round: 999,
-  card: 16,
+  xl: 20,
+  xxl: 24,
+  round: 9999,
+  // Component specific
   button: 12,
+  card: 16,
+  modal: 20,
   fab: 28,
-  search: 24,
+  // Healthcare app specific
+  professional: 14,
+  large: 24,
 };
 
-// Animation durations and easings
-export const animations = {
-  timing: {
-    fast: 150,
-    normal: 250,
-    slow: 350,
-    verySlow: 500,
-  },
-  easing: {
-    easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-    easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-    spring: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-  },
+export const spacing = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+  huge: 40,
+  // Healthcare app specific
+  section: 24,
+  component: 16,
+  tight: 12,
+  rhythm: (multiplier: number) => 8 * multiplier,
 };
 
-// Gradient definitions for modern UI
-export const gradients = {
-  primary: ['#6366F1', '#8B5CF6'],
-  secondary: ['#10B981', '#059669'],
-  tertiary: ['#F59E0B', '#D97706'],
-  error: ['#EF4444', '#DC2626'],
-  background: ['#FAFAFA', '#F9FAFB'],
-  darkBackground: ['#0F0F0F', '#171717'],
-  glass: ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)'],
-  darkGlass: ['rgba(255, 255, 255, 0.1)', 'rgba(255, 255, 255, 0.05)'],
-  route: ['#6366F1', '#3B82F6'],
-  weather: ['#0EA5E9', '#06B6D4'],
-};
-
-export const typography: MD3Typography = {
+export const typography = {
+  // Healthcare app typography scale
   displayLarge: {
-    fontSize: 57,
-    lineHeight: 64,
-    fontWeight: '400',
-    letterSpacing: -0.25,
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: '700' as const,
+    letterSpacing: -0.5,
   },
   displayMedium: {
-    fontSize: 45,
-    lineHeight: 52,
-    fontWeight: '400',
-    letterSpacing: 0,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: '600' as const,
+    letterSpacing: -0.25,
   },
   displaySmall: {
-    fontSize: 36,
-    lineHeight: 44,
-    fontWeight: '400',
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   headlineLarge: {
-    fontSize: 32,
-    lineHeight: 40,
-    fontWeight: '400',
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   headlineMedium: {
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: '400',
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   headlineSmall: {
-    fontSize: 24,
-    lineHeight: 32,
-    fontWeight: '400',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   titleLarge: {
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: '400',
+    fontSize: 18,
+    lineHeight: 26,
+    fontWeight: '600' as const,
     letterSpacing: 0,
   },
   titleMedium: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: '500',
-    letterSpacing: 0.15,
+    fontWeight: '600' as const,
+    letterSpacing: 0.1,
   },
   titleSmall: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '600' as const,
     letterSpacing: 0.1,
   },
   bodyLarge: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: '400',
-    letterSpacing: 0.5,
+    fontWeight: '400' as const,
+    letterSpacing: 0.15,
   },
   bodyMedium: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '400',
+    fontWeight: '400' as const,
     letterSpacing: 0.25,
   },
   bodySmall: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '400',
+    fontWeight: '400' as const,
     letterSpacing: 0.4,
   },
   labelLarge: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     letterSpacing: 0.1,
   },
   labelMedium: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     letterSpacing: 0.5,
   },
   labelSmall: {
     fontSize: 11,
     lineHeight: 16,
-    fontWeight: '500',
+    fontWeight: '500' as const,
     letterSpacing: 0.5,
   },
+};
+
+export const gradients = {
+  primary: ['#3B82F6', '#2563EB'],
+  secondary: ['#60A5FA', '#3B82F6'],
+  accent: ['#1E40AF', '#1D4ED8'],
+  success: ['#10B981', '#059669'],
+  warning: ['#F59E0B', '#D97706'],
+  error: ['#EF4444', '#DC2626'],
+  // Healthcare app specific gradients
+  professional: ['#3B82F6', '#1E40AF'],
+  glass: ['rgba(255, 255, 255, 0.9)', 'rgba(255, 255, 255, 0.7)'],
+  overlay: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.5)'],
+};
+
+export const animation = {
+  // Healthcare app animation timings
+  fast: 150,
+  normal: 250,
+  slow: 350,
+  verySlow: 500,
+  // Easing
+  easeOut: 'ease-out',
+  easeIn: 'ease-in',
+  easeInOut: 'ease-in-out',
+  spring: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
 };
 
 // Updated interface to include new properties

@@ -144,18 +144,21 @@ export class GeocodingService {
   private static parseNominatimResults(data: any[], limit: number): SearchSuggestion[] {
     return data
       .slice(0, limit)
-      .map((item, index) => ({
-        id: item.place_id?.toString() || `${item.lat},${item.lon}`,
-        displayName: this.formatDisplayName(item),
-        address: item.display_name,
-        location: {
-          latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon),
+      .map((item, index) => {
+        const formattedDisplayName = this.formatDisplayName(item);
+        return {
+          id: item.place_id?.toString() || `${item.lat},${item.lon}`,
+          displayName: formattedDisplayName,
           address: item.display_name,
-        },
-        category: this.categorizeResult(item),
-        importance: parseFloat(item.importance) || (1 - index * 0.1),
-      }))
+          location: {
+            latitude: parseFloat(item.lat),
+            longitude: parseFloat(item.lon),
+            address: formattedDisplayName, // Use the formatted name instead of raw display_name
+          },
+          category: this.categorizeResult(item),
+          importance: parseFloat(item.importance) || (1 - index * 0.1),
+        };
+      })
       .sort((a, b) => b.importance - a.importance);
   }
 

@@ -40,7 +40,10 @@ export interface StackProps extends ViewProps {
 
 const getSpacingValue = (value: keyof typeof spacing | number | undefined): number => {
   if (typeof value === 'number') return value;
-  if (typeof value === 'string' && value in spacing) return spacing[value];
+  if (typeof value === 'string' && value in spacing) {
+    const spacingValue = spacing[value];
+    return typeof spacingValue === 'number' ? spacingValue : 0;
+  }
   return 0;
 };
 
