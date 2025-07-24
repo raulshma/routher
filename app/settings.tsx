@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/contexts/ThemeContext';
 import { WeatherService, type WeatherProvider } from '@/services/weatherService';
+import { StorageService } from '@/services/storageService';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
@@ -12,15 +13,41 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode, isDark } = useTheme();
   const [currentWeatherProvider, setCurrentWeatherProvider] = useState<WeatherProvider>('openweather');
   const [availableProviders, setAvailableProviders] = useState<WeatherProvider[]>([]);
+  const [weatherIntervalKm, setWeatherIntervalKm] = useState<number>(4);
 
   useEffect(() => {
     setCurrentWeatherProvider(WeatherService.getCurrentProvider());
     setAvailableProviders(WeatherService.getAvailableProviders());
+    loadWeatherSettings();
   }, []);
 
-  const handleWeatherProviderChange = (provider: WeatherProvider) => {
+  const loadWeatherSettings = async () => {
+    try {
+      const settings = await StorageService.getWeatherSettings();
+      setWeatherIntervalKm(settings.intervalKm);
+      setCurrentWeatherProvider(settings.provider);
+    } catch (error) {
+      console.error('Error loading weather settings:', error);
+    }
+  };
+
+  const handleWeatherProviderChange = async (provider: WeatherProvider) => {
     WeatherService.setProvider(provider);
     setCurrentWeatherProvider(provider);
+    await saveWeatherSettings(weatherIntervalKm, provider);
+  };
+
+  const handleWeatherIntervalChange = async (intervalKm: number) => {
+    setWeatherIntervalKm(intervalKm);
+    await saveWeatherSettings(intervalKm, currentWeatherProvider);
+  };
+
+  const saveWeatherSettings = async (intervalKm: number, provider: WeatherProvider) => {
+    try {
+      await StorageService.saveWeatherSettings({ intervalKm, provider });
+    } catch (error) {
+      console.error('Error saving weather settings:', error);
+    }
   };
 
   const themeOptions = [
@@ -173,6 +200,53 @@ export default function SettingsScreen() {
                 </View>
               </Card>
             )}
+
+            {/* Weather Interval Settings */}
+            <Card variant="elevated" style={styles.settingsCard} borderRadius={20}>
+              <View style={styles.cardContent}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionIcon}>
+                    <Ionicons name="location" size={24} color="#8B5CF6" />
+                  </View>
+                  <View style={styles.sectionTitleContainer}>
+                    <Text style={styles.sectionTitle}>Weather Intervals</Text>
+                    <Text style={styles.sectionDescription}>Configure weather data points along your route</Text>
+                  </View>
+                </View>
+
+                <View style={styles.optionsContainer}>
+                  <RadioGroup
+                    options={[
+                      { value: '1', label: '1 km', description: 'More detailed weather data' },
+                      { value: '2', label: '2 km', description: 'Good balance of detail and performance' },
+                      { value: '4', label: '4 km (Recommended)', description: 'Default interval for most routes' },
+                      { value: '5', label: '5 km', description: 'Less detailed, faster loading' },
+                      { value: '10', label: '10 km', description: 'Basic weather overview' },
+                    ]}
+                    value={weatherIntervalKm.toString()}
+                    onValueChange={(value) => handleWeatherIntervalChange(parseInt(value, 10))}
+                    spacing={16}
+                  />
+                </View>
+
+                {/* Current interval indicator */}
+                <View style={styles.currentProviderContainer}>
+                  <View style={styles.currentProviderIcon}>
+                    <Ionicons name="location" size={16} color="#8B5CF6" />
+                  </View>
+                  <Text style={styles.currentProviderText}>
+                    Current interval: {weatherIntervalKm} km between weather points
+                  </Text>
+                </View>
+
+                <View style={styles.warningContainer}>
+                  <Ionicons name="information-circle" size={16} color="#06B6D4" />
+                  <Text style={styles.warningText}>
+                    Smaller intervals provide more detailed weather data but may increase loading time and API usage.
+                  </Text>
+                </View>
+              </View>
+            </Card>
 
             {/* App Information */}
             <Card variant="elevated" style={styles.settingsCard} borderRadius={20}>

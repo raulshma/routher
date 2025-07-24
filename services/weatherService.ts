@@ -1,4 +1,5 @@
-import { Location, WeatherData } from '@/types';
+import { Location, WeatherData, WeatherCondition, WeatherSettings } from '@/types';
+import { StorageService } from './storageService';
 
 // Weather provider configuration
 export type WeatherProvider = 'openweather' | 'weatherapi';
@@ -21,6 +22,36 @@ export class WeatherService {
 
   static setProvider(provider: WeatherProvider): void {
     this.currentProvider = provider;
+  }
+
+  // Helper function to map weather description to condition
+  private static mapWeatherCondition(description: string, iconCode: string, precipitation: number): WeatherCondition {
+    const desc = description.toLowerCase();
+    
+    if (desc.includes('thunder') || desc.includes('storm')) return 'thunderstorm';
+    if (desc.includes('snow') || desc.includes('blizzard')) return 'snow';
+    if (desc.includes('fog') || desc.includes('mist') || desc.includes('haze')) return 'fog';
+    if (precipitation > 5) return 'heavy-rain';
+    if (precipitation > 0 || desc.includes('rain') || desc.includes('drizzle')) return 'rainy';
+    if (desc.includes('cloud') && desc.includes('few')) return 'partly-cloudy';
+    if (desc.includes('cloud') || desc.includes('overcast')) return 'cloudy';
+    if (desc.includes('clear') || desc.includes('sunny') || iconCode.includes('01')) return 'sunny';
+    
+    return 'unknown';
+  }
+
+  // Helper function to calculate chance of rain
+  private static calculateChanceOfRain(description: string, humidity: number, precipitation: number): number {
+    const desc = description.toLowerCase();
+    
+    if (precipitation > 0) return Math.min(95, 60 + precipitation * 5);
+    if (desc.includes('thunder') || desc.includes('storm')) return 90;
+    if (desc.includes('rain') || desc.includes('drizzle')) return 80;
+    if (desc.includes('shower')) return 70;
+    if (humidity > 80) return Math.min(60, 20 + (humidity - 80) * 2);
+    if (humidity > 60) return Math.min(40, 10 + (humidity - 60));
+    
+    return Math.max(0, humidity / 4);
   }
 
   static getCurrentProvider(): WeatherProvider {
@@ -66,13 +97,18 @@ export class WeatherService {
     } catch (error) {
       console.error('Error fetching weather:', error);
       // Return dummy data for demo purposes
-      return {
+      const fallbackData = {
         temperature: 20,
         description: 'Clear sky',
         icon: '01d',
         humidity: 50,
         windSpeed: 3.5,
         precipitation: 0,
+      };
+      return {
+        ...fallbackData,
+        condition: this.mapWeatherCondition(fallbackData.description, fallbackData.icon, fallbackData.precipitation),
+        chanceOfRain: this.calculateChanceOfRain(fallbackData.description, fallbackData.humidity, fallbackData.precipitation),
       };
     }
   }
@@ -88,13 +124,19 @@ export class WeatherService {
     
     const data = await response.json();
     
-    return {
+    const baseData = {
       temperature: Math.round(data.main.temp),
       description: data.weather[0].description,
       icon: this.mapOpenWeatherIcon(data.weather[0].icon),
       humidity: data.main.humidity,
       windSpeed: data.wind.speed,
       precipitation: data.rain?.['1h'] || data.snow?.['1h'] || 0,
+    };
+
+    return {
+      ...baseData,
+      condition: this.mapWeatherCondition(baseData.description, baseData.icon, baseData.precipitation),
+      chanceOfRain: this.calculateChanceOfRain(baseData.description, baseData.humidity, baseData.precipitation),
     };
   }
 
@@ -109,13 +151,19 @@ export class WeatherService {
     
     const data = await response.json();
     
-    return {
+    const baseData = {
       temperature: Math.round(data.current.temp_c),
       description: data.current.condition.text.toLowerCase(),
       icon: this.mapWeatherAPIIcon(data.current.condition.code, data.current.is_day),
       humidity: data.current.humidity,
       windSpeed: data.current.wind_kph / 3.6, // Convert km/h to m/s
       precipitation: data.current.precip_mm,
+    };
+
+    return {
+      ...baseData,
+      condition: this.mapWeatherCondition(baseData.description, baseData.icon, baseData.precipitation),
+      chanceOfRain: this.calculateChanceOfRain(baseData.description, baseData.humidity, baseData.precipitation),
     };
   }
 
@@ -192,5 +240,82 @@ export class WeatherService {
     );
     
     return Promise.all(weatherPromises);
+  }
+
+  // Generate weather points at configurable intervals
+  static generateWeatherPoints(
+    routeGeometry: Location[],
+    totalDistanceMeters: number,
+    intervalKm: number = 4
+  ): Location[] {
+    if (routeGeometry.length === 0) return [];
+    
+    const intervalMeters = intervalKm * 1000;
+    const weatherPoints: Location[] = [];
+    
+    // Always include the start point
+    weatherPoints.push(routeGeometry[0]);
+    
+    if (totalDistanceMeters <= intervalMeters) {
+      // If route is shorter than interval, only add start and end
+      if (routeGeometry.length > 1) {
+        weatherPoints.push(routeGeometry[routeGeometry.length - 1]);
+      }
+      return weatherPoints;
+    }
+    
+    let currentDistance = 0;
+    let nextWeatherDistance = intervalMeters;
+    
+    for (let i = 0; i < routeGeometry.length - 1; i++) {
+      const currentPoint = routeGeometry[i];
+      const nextPoint = routeGeometry[i + 1];
+      const segmentDistance = this.calculateDistance(currentPoint, nextPoint);
+      
+      // Check if we need to add weather points in this segment
+      while (currentDistance + segmentDistance >= nextWeatherDistance) {
+        // Calculate position of weather point along this segment
+        const distanceIntoSegment = nextWeatherDistance - currentDistance;
+        const ratio = distanceIntoSegment / segmentDistance;
+        
+        const weatherPoint: Location = {
+          latitude: currentPoint.latitude + (nextPoint.latitude - currentPoint.latitude) * ratio,
+          longitude: currentPoint.longitude + (nextPoint.longitude - currentPoint.longitude) * ratio,
+        };
+        
+        weatherPoints.push(weatherPoint);
+        nextWeatherDistance += intervalMeters;
+      }
+      
+      currentDistance += segmentDistance;
+    }
+    
+    // Always include the end point if we haven't already
+    const lastPoint = routeGeometry[routeGeometry.length - 1];
+    const lastWeatherPoint = weatherPoints[weatherPoints.length - 1];
+    if (
+      lastWeatherPoint.latitude !== lastPoint.latitude ||
+      lastWeatherPoint.longitude !== lastPoint.longitude
+    ) {
+      weatherPoints.push(lastPoint);
+    }
+    
+    return weatherPoints;
+  }
+
+  // Helper function to calculate distance between two points in meters
+  private static calculateDistance(point1: Location, point2: Location): number {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (point1.latitude * Math.PI) / 180;
+    const φ2 = (point2.latitude * Math.PI) / 180;
+    const Δφ = ((point2.latitude - point1.latitude) * Math.PI) / 180;
+    const Δλ = ((point2.longitude - point1.longitude) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
   }
 } 

@@ -8,20 +8,19 @@ interface WeatherMarkerProps {
 }
 
 export function WeatherMarker({ weatherPoint }: WeatherMarkerProps) {
-  const getWeatherIcon = (iconCode: string) => {
-    // Map OpenWeather icon codes to emojis
-    const iconMap: { [key: string]: string } = {
-      '01d': '☀️', '01n': '🌙',
-      '02d': '⛅', '02n': '⛅',
-      '03d': '☁️', '03n': '☁️',
-      '04d': '☁️', '04n': '☁️',
-      '09d': '🌧️', '09n': '🌧️',
-      '10d': '🌦️', '10n': '🌦️',
-      '11d': '⛈️', '11n': '⛈️',
-      '13d': '❄️', '13n': '❄️',
-      '50d': '🌫️', '50n': '🌫️',
-    };
-    return iconMap[iconCode] || '🌤️';
+  const getWeatherIcon = (weather: WeatherPoint['weather']) => {
+    // Use the condition field for more accurate icons
+    switch (weather.condition) {
+      case 'sunny': return '☀️';
+      case 'partly-cloudy': return '⛅';
+      case 'cloudy': return '☁️';
+      case 'rainy': return '🌧️';
+      case 'heavy-rain': return '🌦️';
+      case 'thunderstorm': return '⛈️';
+      case 'snow': return '❄️';
+      case 'fog': return '🌫️';
+      default: return '🌤️';
+    }
   };
 
   const formatDistance = (distanceMeters: number) => {
@@ -38,7 +37,7 @@ export function WeatherMarker({ weatherPoint }: WeatherMarkerProps) {
     >
       <View style={styles.weatherMarker}>
         <Text style={styles.weatherIcon}>
-          {getWeatherIcon(weatherPoint.weather.icon)}
+          {getWeatherIcon(weatherPoint.weather)}
         </Text>
         <Text style={styles.temperature}>
           {weatherPoint.weather.temperature}°
@@ -53,6 +52,11 @@ export function WeatherMarker({ weatherPoint }: WeatherMarkerProps) {
           <Text style={styles.calloutDescription}>
             {weatherPoint.weather.description}
           </Text>
+          {weatherPoint.weather.chanceOfRain > 20 && (
+            <Text style={styles.calloutDetails}>
+              Chance of rain: {weatherPoint.weather.chanceOfRain}%
+            </Text>
+          )}
           <Text style={styles.calloutDetails}>
             Temperature: {weatherPoint.weather.temperature}°C
           </Text>

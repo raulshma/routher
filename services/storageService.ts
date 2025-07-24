@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SavedRoute } from '@/types';
+import { SavedRoute, WeatherSettings } from '@/types';
 
 const ROUTES_STORAGE_KEY = 'saved_routes';
+const WEATHER_SETTINGS_KEY = 'weather_settings';
 
 export class StorageService {
   static async saveRoute(route: SavedRoute): Promise<void> {
@@ -68,6 +69,29 @@ export class StorageService {
     } catch (error) {
       console.error('Error clearing routes:', error);
       throw new Error('Failed to clear routes');
+    }
+  }
+
+  // Weather Settings
+  static async getWeatherSettings(): Promise<WeatherSettings> {
+    try {
+      const settingsData = await AsyncStorage.getItem(WEATHER_SETTINGS_KEY);
+      if (!settingsData) {
+        return { intervalKm: 4, provider: 'weatherapi' }; // Default settings
+      }
+      return JSON.parse(settingsData);
+    } catch (error) {
+      console.error('Error loading weather settings:', error);
+      return { intervalKm: 4, provider: 'weatherapi' }; // Default fallback
+    }
+  }
+
+  static async saveWeatherSettings(settings: WeatherSettings): Promise<void> {
+    try {
+      await AsyncStorage.setItem(WEATHER_SETTINGS_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.error('Error saving weather settings:', error);
+      throw new Error('Failed to save weather settings');
     }
   }
 } 

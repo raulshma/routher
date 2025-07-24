@@ -42,13 +42,27 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
     const temperatures = weatherPoints.map(point => point.weather.temperature);
     const humidities = weatherPoints.map(point => point.weather.humidity);
     const precipitations = weatherPoints.map(point => point.weather.precipitation);
+    const rainChances = weatherPoints.map(point => point.weather.chanceOfRain);
+
+    // Count weather conditions
+    const conditionCounts = weatherPoints.reduce((acc, point) => {
+      acc[point.weather.condition] = (acc[point.weather.condition] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const dominantCondition = Object.entries(conditionCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0] || 'unknown';
 
     return {
       avgTemp: Math.round(temperatures.reduce((a, b) => a + b, 0) / temperatures.length),
       avgHumidity: Math.round(humidities.reduce((a, b) => a + b, 0) / humidities.length),
       maxPrecipitation: Math.max(...precipitations),
+      maxRainChance: Math.max(...rainChances),
       minTemp: Math.min(...temperatures),
       maxTemp: Math.max(...temperatures),
+      dominantCondition,
+      intervalKm: weatherPoints.length > 1 ? 
+        Math.round(weatherPoints[1].distanceFromStart / 1000) : 4,
     };
   }, [weatherPoints]);
 
@@ -61,16 +75,31 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
   };
 
   const getWeatherIcon = (weather: WeatherData): string => {
-    switch (weather.icon) {
-      case '01d': case '01n': return '☀️';
-      case '02d': case '02n': return '⛅';
-      case '03d': case '03n': case '04d': case '04n': return '☁️';
-      case '09d': case '09n': return '🌧️';
-      case '10d': case '10n': return '🌦️';
-      case '11d': case '11n': return '⛈️';
-      case '13d': case '13n': return '❄️';
-      case '50d': case '50n': return '🌫️';
+    // Use the condition field for more accurate icons
+    switch (weather.condition) {
+      case 'sunny': return '☀️';
+      case 'partly-cloudy': return '⛅';
+      case 'cloudy': return '☁️';
+      case 'rainy': return '🌧️';
+      case 'heavy-rain': return '🌦️';
+      case 'thunderstorm': return '⛈️';
+      case 'snow': return '❄️';
+      case 'fog': return '🌫️';
       default: return '🌡️';
+    }
+  };
+
+  const getWeatherStatusText = (weather: WeatherData): string => {
+    switch (weather.condition) {
+      case 'sunny': return 'Sunny';
+      case 'partly-cloudy': return 'Partly Cloudy';
+      case 'cloudy': return 'Cloudy';
+      case 'rainy': return 'Rainy';
+      case 'heavy-rain': return 'Heavy Rain';
+      case 'thunderstorm': return 'Thunderstorm';
+      case 'snow': return 'Snow';
+      case 'fog': return 'Foggy';
+      default: return weather.description || 'Unknown';
     }
   };
 
@@ -89,7 +118,7 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
     );
   }
 
-  const { avgTemp, avgHumidity, maxPrecipitation } = weatherStats;
+  const { avgTemp, avgHumidity, maxPrecipitation, maxRainChance, dominantCondition, intervalKm } = weatherStats;
 
   return (
     <YStack space="md">
@@ -97,7 +126,7 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
       <Card padding={SPACING.md}>
         <YStack space="md">
           <Text fontSize={FONT_SIZES.lg} fontWeight="600" color={colors.primary}>
-            Weather Summary
+            Weather Summary - {getWeatherStatusText({ condition: dominantCondition } as WeatherData)}
           </Text>
           <XStack justifyContent="space-around">
             <YStack alignItems="center">
@@ -118,10 +147,10 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
             </YStack>
             <YStack alignItems="center">
               <Text fontSize={FONT_SIZES.lg} fontWeight="700">
-                {maxPrecipitation.toFixed(1)}mm
+                {maxRainChance}%
               </Text>
               <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
-                Max Rain
+                Max Rain Chance
               </Text>
             </YStack>
           </XStack>
@@ -130,7 +159,7 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
 
       {/* Weather Points */}
       <Text fontSize={FONT_SIZES.lg} fontWeight="600">
-        Weather at {weatherPoints.length} kilometer intervals
+        Weather at {intervalKm}km intervals ({weatherPoints.length} points)
       </Text>
       
       {weatherPoints.map((weatherPoint, index) => (
@@ -165,7 +194,7 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
 
               {/* Distance */}
               <Text fontSize={FONT_SIZES.xl}>
-                {index === 0 ? 'Start' : `${index}km`}
+                {index === 0 ? 'Start' : `${(weatherPoint.distanceFromStart / 1000).toFixed(1)}km`}
               </Text>
 
               {/* Weather Details */}
@@ -175,8 +204,13 @@ export const WeatherSegment: React.FC<WeatherSegmentProps> = ({
                   {weatherPoint.weather.temperature}°C
                 </Text>
                 <Text fontSize={FONT_SIZES.sm} color={colors.onSurfaceVariant}>
-                  {weatherPoint.weather.description}
+                  {getWeatherStatusText(weatherPoint.weather)}
                 </Text>
+                {weatherPoint.weather.chanceOfRain > 20 && (
+                  <Text fontSize={FONT_SIZES.sm} color={colors.primary}>
+                    {weatherPoint.weather.chanceOfRain}% chance of rain
+                  </Text>
+                )}
               </YStack>
 
               {/* Additional Info */}

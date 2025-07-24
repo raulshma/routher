@@ -24,6 +24,24 @@ export interface WeatherData {
   humidity: number;
   windSpeed: number;
   precipitation: number;
+  condition: WeatherCondition;
+  chanceOfRain: number;
+}
+
+export type WeatherCondition = 
+  | 'sunny' 
+  | 'partly-cloudy' 
+  | 'cloudy' 
+  | 'rainy' 
+  | 'heavy-rain' 
+  | 'thunderstorm' 
+  | 'snow' 
+  | 'fog' 
+  | 'unknown';
+
+export interface WeatherSettings {
+  intervalKm: number;
+  provider: 'openweather' | 'weatherapi';
 }
 
 export interface WeatherPoint {

@@ -166,13 +166,20 @@ export default function MainScreen() {
           duration: mainRoute.totalDuration,
         });
 
-        // Get weather data
+        // Get weather data with configurable intervals
         try {
-          const weatherData = await WeatherService.getWeatherForRoute(mainRoute.geometry);
+          const weatherSettings = await StorageService.getWeatherSettings();
+          const weatherLocations = WeatherService.generateWeatherPoints(
+            mainRoute.geometry,
+            mainRoute.totalDistance,
+            weatherSettings.intervalKm
+          );
+          
+          const weatherData = await WeatherService.getWeatherForRoute(weatherLocations);
           const weather = weatherData.map((data, index) => ({
-            location: mainRoute.geometry[index],
+            location: weatherLocations[index],
             weather: data,
-            distanceFromStart: index * (mainRoute.totalDistance / mainRoute.geometry.length),
+            distanceFromStart: index * weatherSettings.intervalKm * 1000, // Convert km to meters
           }));
           setWeatherPoints(weather);
         } catch (weatherError) {
